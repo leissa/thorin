@@ -28,7 +28,7 @@ const Def* BoundElim::rewrite(const Def* old_def, const Def*, Defs new_ops, cons
         auto value = new_ops[0];
         auto sigma = join->convert();
         auto val   = world().op_bitcast(sigma->op(1), value, new_dbg);
-        return world().tuple(sigma, {world().lit_int(join->num_ops(), join->find(vel->value()->type())), val});
+        return world().tuple(sigma, {world().lit_i(join->num_ops(), join->find(vel->value()->type())), val});
     } else if (auto test = old_def->isa<Test>()) {
         auto [value, probe, match, clash] = new_ops.to_array<4>();
         auto [index, box] = value->split<2>();

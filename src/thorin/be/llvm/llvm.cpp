@@ -106,7 +106,7 @@ void CodeGen::emit_result_phi(const Def* var, llvm::Value* value) {
 
 Lam* CodeGen::emit_atomic(Lam* lam) {
     assert(lam->body()->as<App>()->num_args() == 5 && "required arguments are missing");
-    if (!isa<Tag::Int>(lam->body()->as<App>()->arg(3)->type()))
+    if (!isa<Tag::I>(lam->body()->as<App>()->arg(3)->type()))
         world().edef(lam->body()->as<App>()->arg(3), "atomic only supported for integer types");
     // atomic tag: Xchg Add Sub And Nand Or Xor Max Min
     u32 tag = as_lit<u32>(lam->body()->as<App>()->arg(1));
@@ -122,7 +122,7 @@ Lam* CodeGen::emit_atomic(Lam* lam) {
 
 Lam* CodeGen::emit_cmpxchg(Lam* lam) {
     assert(lam->body()->as<App>()->num_args() == 5 && "required arguments are missing");
-    if (!isa<Tag::Int>(lam->body()->as<App>()->arg(3)->type()))
+    if (!isa<Tag::I>(lam->body()->as<App>()->arg(3)->type()))
         world().edef(lam->body()->as<App>()->arg(3), "cmpxchg only supported for integer types");
     auto ptr  = lookup(lam->body()->as<App>()->arg(1));
     auto cmp  = lookup(lam->body()->as<App>()->arg(2));
@@ -655,7 +655,7 @@ llvm::Value* CodeGen::emit(const Def* def) {
             case Div::urem: return irbuilder_.CreateURem(a, b, name);
             default: THORIN_UNREACHABLE;
         }
-    } else if (auto rop = isa<Tag::ROp>(def)) {
+    } else if (auto rop = isa<Tag::FOp>(def)) {
         auto name = def->debug().name;
         auto [a, b] = rop->args<2>([&](auto def) { return lookup(def); });
         auto [mode, width] = rop->decurry()->args<2>(as_lit<nat_t>);
@@ -671,11 +671,11 @@ llvm::Value* CodeGen::emit(const Def* def) {
         irbuilder_.setFastMathFlags(flags);
 
         switch (rop.flags()) {
-            case ROp::add: return irbuilder_.CreateFAdd(a, b, name);
-            case ROp::sub: return irbuilder_.CreateFSub(a, b, name);
-            case ROp::mul: return irbuilder_.CreateFMul(a, b, name);
-            case ROp::div: return irbuilder_.CreateFDiv(a, b, name);
-            case ROp::rem: return irbuilder_.CreateFRem(a, b, name);
+            case FOp::add: return irbuilder_.CreateFAdd(a, b, name);
+            case FOp::sub: return irbuilder_.CreateFSub(a, b, name);
+            case FOp::mul: return irbuilder_.CreateFMul(a, b, name);
+            case FOp::div: return irbuilder_.CreateFDiv(a, b, name);
+            case FOp::rem: return irbuilder_.CreateFRem(a, b, name);
             default: THORIN_UNREACHABLE;
         }
     } else if (auto icmp = isa<Tag::ICmp>(def)) {
@@ -694,24 +694,24 @@ llvm::Value* CodeGen::emit(const Def* def) {
             case ICmp::ule: return irbuilder_.CreateICmpULE(a, b, name);
             default: THORIN_UNREACHABLE;
         }
-    } else if (auto rcmp = isa<Tag::RCmp>(def)) {
+    } else if (auto rcmp = isa<Tag::FCmp>(def)) {
         auto [a, b] = rcmp->args<2>([&](auto def) { return lookup(def); });
         auto name = def->debug().name;
         switch (rcmp.flags()) {
-            case RCmp::  e: return irbuilder_.CreateFCmpOEQ(a, b, name);
-            case RCmp::  l: return irbuilder_.CreateFCmpOLT(a, b, name);
-            case RCmp:: le: return irbuilder_.CreateFCmpOLE(a, b, name);
-            case RCmp::  g: return irbuilder_.CreateFCmpOGT(a, b, name);
-            case RCmp:: ge: return irbuilder_.CreateFCmpOGE(a, b, name);
-            case RCmp:: ne: return irbuilder_.CreateFCmpONE(a, b, name);
-            case RCmp::  o: return irbuilder_.CreateFCmpORD(a, b, name);
-            case RCmp::  u: return irbuilder_.CreateFCmpUNO(a, b, name);
-            case RCmp:: ue: return irbuilder_.CreateFCmpUEQ(a, b, name);
-            case RCmp:: ul: return irbuilder_.CreateFCmpULT(a, b, name);
-            case RCmp::ule: return irbuilder_.CreateFCmpULE(a, b, name);
-            case RCmp:: ug: return irbuilder_.CreateFCmpUGT(a, b, name);
-            case RCmp::uge: return irbuilder_.CreateFCmpUGE(a, b, name);
-            case RCmp::une: return irbuilder_.CreateFCmpUNE(a, b, name);
+            case FCmp::  e: return irbuilder_.CreateFCmpOEQ(a, b, name);
+            case FCmp::  l: return irbuilder_.CreateFCmpOLT(a, b, name);
+            case FCmp:: le: return irbuilder_.CreateFCmpOLE(a, b, name);
+            case FCmp::  g: return irbuilder_.CreateFCmpOGT(a, b, name);
+            case FCmp:: ge: return irbuilder_.CreateFCmpOGE(a, b, name);
+            case FCmp:: ne: return irbuilder_.CreateFCmpONE(a, b, name);
+            case FCmp::  o: return irbuilder_.CreateFCmpORD(a, b, name);
+            case FCmp::  u: return irbuilder_.CreateFCmpUNO(a, b, name);
+            case FCmp:: ue: return irbuilder_.CreateFCmpUEQ(a, b, name);
+            case FCmp:: ul: return irbuilder_.CreateFCmpULT(a, b, name);
+            case FCmp::ule: return irbuilder_.CreateFCmpULE(a, b, name);
+            case FCmp:: ug: return irbuilder_.CreateFCmpUGT(a, b, name);
+            case FCmp::uge: return irbuilder_.CreateFCmpUGE(a, b, name);
+            case FCmp::une: return irbuilder_.CreateFCmpUNE(a, b, name);
             default: THORIN_UNREACHABLE;
         }
     } else if (auto conv = isa<Tag::Conv>(def)) {
@@ -720,12 +720,12 @@ llvm::Value* CodeGen::emit(const Def* def) {
         auto type = convert(def->type());
 
         auto size2width = [&](const Def* type) {
-            if (auto int_ = isa<Tag::Int>(type)) {
+            if (auto int_ = isa<Tag::I>(type)) {
                 if (int_->arg()->isa<Top>()) return 64_u64;
                 if (auto width = mod2width(as_lit(int_->arg()))) return *width;
                 return 64_u64;
             }
-            return as_lit(as<Tag::Real>(type)->arg());
+            return as_lit(as<Tag::F>(type)->arg());
         };
 
         nat_t s_src = size2width(conv->arg()->type());
@@ -734,11 +734,11 @@ llvm::Value* CodeGen::emit(const Def* def) {
         switch (conv.flags()) {
             case Conv::s2s: return s_src < s_dst ? irbuilder_.CreateSExt (src, type, name) : irbuilder_.CreateTrunc  (src, type, name);
             case Conv::u2u: return s_src < s_dst ? irbuilder_.CreateZExt (src, type, name) : irbuilder_.CreateTrunc  (src, type, name);
-            case Conv::r2r: return s_src < s_dst ? irbuilder_.CreateFPExt(src, type, name) : irbuilder_.CreateFPTrunc(src, type, name);
-            case Conv::s2r: return irbuilder_.CreateSIToFP(src, type, name);
-            case Conv::u2r: return irbuilder_.CreateUIToFP(src, type, name);
-            case Conv::r2s: return irbuilder_.CreateFPToSI(src, type, name);
-            case Conv::r2u: return irbuilder_.CreateFPToUI(src, type, name);
+            case Conv::f2f: return s_src < s_dst ? irbuilder_.CreateFPExt(src, type, name) : irbuilder_.CreateFPTrunc(src, type, name);
+            case Conv::s2f: return irbuilder_.CreateSIToFP(src, type, name);
+            case Conv::u2f: return irbuilder_.CreateUIToFP(src, type, name);
+            case Conv::f2s: return irbuilder_.CreateFPToSI(src, type, name);
+            case Conv::f2u: return irbuilder_.CreateFPToUI(src, type, name);
             default: THORIN_UNREACHABLE;
         }
     } else if (auto bitcast = isa<Tag::Bitcast>(def)) {
@@ -831,7 +831,7 @@ llvm::Value* CodeGen::emit(const Def* def) {
 
         if (lit->type()->isa<Nat>()) {
             return irbuilder_.getInt64(lit->get<u64>());
-        } else if (isa<Tag::Int>(lit->type())) {
+        } else if (isa<Tag::I>(lit->type())) {
             auto size = isa_sized_type(lit->type());
             if (size->isa<Top>()) return irbuilder_.getInt64(lit->get<u64>());
             if (auto mod = mod2width(as_lit(size))) {
@@ -850,11 +850,11 @@ llvm::Value* CodeGen::emit(const Def* def) {
             }
         }
 
-        if (auto real = isa<Tag::Real>(lit->type())) {
+        if (auto real = isa<Tag::F>(lit->type())) {
             switch (as_lit<nat_t>(real->arg())) {
-                case 16: return llvm::ConstantFP::get(llvm_type, lit->get<r16>());
-                case 32: return llvm::ConstantFP::get(llvm_type, lit->get<r32>());
-                case 64: return llvm::ConstantFP::get(llvm_type, lit->get<r64>());
+                case 16: return llvm::ConstantFP::get(llvm_type, lit->get<f16>());
+                case 32: return llvm::ConstantFP::get(llvm_type, lit->get<f32>());
+                case 64: return llvm::ConstantFP::get(llvm_type, lit->get<f64>());
                 default: THORIN_UNREACHABLE;
             }
         }
@@ -923,7 +923,7 @@ llvm::Type* CodeGen::convert(const Def* type) {
 
     if (type->isa<Nat>()) {
         return types_[type] = irbuilder_.getInt64Ty();
-    } else if (isa<Tag::Int>(type)) {
+    } else if (isa<Tag::I>(type)) {
         auto size = isa_sized_type(type);
         if (size->isa<Top>()) return types_[type] = irbuilder_.getInt64Ty();
         if (auto width = mod2width(as_lit(size))) {
@@ -940,7 +940,7 @@ llvm::Type* CodeGen::convert(const Def* type) {
         } else {
             return types_[type] = irbuilder_.getInt64Ty();
         }
-    } else if (auto real = isa<Tag::Real>(type)) {
+    } else if (auto real = isa<Tag::F>(type)) {
         switch (as_lit<nat_t>(real->arg())) {
             case 16: return types_[type] = irbuilder_.getHalfTy();
             case 32: return types_[type] = irbuilder_.getFloatTy();

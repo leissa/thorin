@@ -21,11 +21,11 @@ Stream& stream(Stream& s, const Def* def) {
     else if (auto top = def->isa<Top>()) return s.fmt("⊤∷{}", top->type());
     else if (auto axiom = def->isa<Axiom>()) return s.fmt(":{}", axiom->debug().name);
     else if (auto lit = def->isa<Lit>()) {
-        if (auto real = thorin::isa<Tag::Real>(lit->type())) {
-            switch (as_lit(real->arg())) {
-                case 16: return s.fmt("{}∷r16", lit->get<r16>());
-                case 32: return s.fmt("{}∷r32", lit->get<r32>());
-                case 64: return s.fmt("{}∷r64", lit->get<r64>());
+        if (auto f = thorin::isa<Tag::F>(lit->type())) {
+            switch (as_lit(f->arg())) {
+                case 16: return s.fmt("{}∷r16", lit->get<f16>());
+                case 32: return s.fmt("{}∷r32", lit->get<f32>());
+                case 64: return s.fmt("{}∷r64", lit->get<f64>());
                 default: THORIN_UNREACHABLE;
             }
         }
@@ -41,8 +41,8 @@ Stream& stream(Stream& s, const Def* def) {
         return s.fmt("λ@({}) {}", lam->filter(), lam->body());
     } else if (auto app = def->isa<App>()) {
         if (auto size = isa_lit(isa_sized_type(app))) {
-            if (auto real = thorin::isa<Tag::Real>(app)) return s.fmt("r{}", *size);
-            if (auto _int = thorin::isa<Tag:: Int>(app)) {
+            if (auto f = thorin::isa<Tag::F>(app)) return s.fmt("r{}", *size);
+            if (auto i = thorin::isa<Tag::I>(app)) {
                 if (auto width = mod2width(*size)) return s.fmt("i{}", *width);
 
                 // append utf-8 subscripts in reverse order

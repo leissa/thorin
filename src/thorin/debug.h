@@ -12,8 +12,8 @@ class Def;
 class World;
 
 struct Pos {
-    const uint32_t row = -1;
-    const uint32_t col = -1;
+    uint32_t row = -1;
+    uint32_t col = -1;
 };
 
 struct Loc : public Streamable<Loc> {
@@ -23,17 +23,24 @@ struct Loc : public Streamable<Loc> {
         , begin(begin)
         , finis(finis)
     {}
+    Loc(std::string file, Pos pos)
+        : Loc(file, pos, pos)
+    {}
     Loc(const Def* dbg);
 
-    const std::string file;
-    const Pos begin = {uint32_t(-1), uint32_t(-1)};
-    const Pos finis = {uint32_t(-1), uint32_t(-1)};
+    Loc anew_begin() const { return {file, begin, begin}; }
+    Loc anew_finis() const { return {file, finis, finis}; }
+
+    std::string file;
+    Pos begin = {uint32_t(-1), uint32_t(-1)};
+    Pos finis = {uint32_t(-1), uint32_t(-1)};
 
     Stream& stream(Stream&) const;
 };
 
 class Debug {
 public:
+    Debug() = default; // TODO remove
     Debug(std::string name, Loc loc = {}, const Def* meta = nullptr)
         : name(name)
         , loc(loc)
@@ -47,8 +54,8 @@ public:
     {}
     Debug(const Def*);
 
-    const std::string name;
-    const Loc loc;
+    std::string name;
+    Loc loc;
     const Def* meta = nullptr;
 };
 

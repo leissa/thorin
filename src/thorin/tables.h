@@ -26,9 +26,9 @@ using nat_t    = u64;
     m(Global, global)
 
 #define THORIN_TAG(m)                                               \
-    m(Mem, mem) m(Int, int) m(Real, real) m(Ptr, ptr)               \
-    m(Bit, bit) m(Shr, shr) m(Wrap, wrap) m(Div, div) m(ROp, rop)   \
-    m(ICmp, icmp) m(RCmp, rcmp)                                     \
+    m(Mem, mem) m(I, i) m(F, f) m(Ptr, ptr)                         \
+    m(Bit, bit) m(Shr, shr) m(Wrap, wrap) m(Div, div) m(FOp, fop)   \
+    m(ICmp, icmp) m(FCmp, rcmp)                                     \
     m(Trait, trait) m(Conv, conv) m(PE, pe) m(Acc, acc)             \
     m(Bitcast, bitcast) m(LEA, lea)                                 \
     m(Alloc, alloc) m(Slot, slot) m(Load, load) m(Store, store)     \
@@ -68,12 +68,12 @@ enum RMode : nat_t {
 #define THORIN_WRAP(m) m(Wrap, add) m(Wrap, sub) m(Wrap, mul) m(Wrap, shl)
 /// Integer operations that might produce a "division by zero" side effect.
 #define THORIN_DIV(m) m(Div, sdiv) m(Div, udiv) m(Div, srem) m(Div, urem)
-/// Floating point (real) operations that take @p Rreme.
-#define THORIN_R_OP(m) m(ROp, add) m(ROp, sub) m(ROp, mul) m(ROp, div) m(ROp, rem)
+/// Floating point (float) operations that take @p Rreme.
+#define THORIN_F_OP(m) m(FOp, add) m(FOp, sub) m(FOp, mul) m(FOp, div) m(FOp, rem)
 /// Type traits
 #define THORIN_TRAIT(m) m(Trait, size) m(Trait, align)
 /// Conversions
-#define THORIN_CONV(m) m(Conv, s2s) m(Conv, u2u) m(Conv, s2r) m(Conv, u2r) m(Conv, r2s) m(Conv, r2u) m(Conv, r2r)
+#define THORIN_CONV(m) m(Conv, s2s) m(Conv, u2u) m(Conv, s2f) m(Conv, u2f) m(Conv, f2s) m(Conv, f2u) m(Conv, f2f)
 /// Partial Evaluation related operations
 #define THORIN_PE(m) m(PE, hlt) m(PE, known) m(PE, run)
 /// Accelerators
@@ -136,23 +136,23 @@ enum RMode : nat_t {
                      m(ICmp,   ne)   /* x x x x o - not equal                                       */ \
                      m(ICmp,   _t)   /* x x x x x - always true                                     */
 
-#define THORIN_R_CMP(m)           /* U G L E                                 */ \
-                     m(RCmp,   f) /* o o o o - always false                  */ \
-                     m(RCmp,   e) /* o o o x - ordered and equal             */ \
-                     m(RCmp,   l) /* o o x o - ordered and less              */ \
-                     m(RCmp,  le) /* o o x x - ordered and less or equal     */ \
-                     m(RCmp,   g) /* o x o o - ordered and greater           */ \
-                     m(RCmp,  ge) /* o x o x - ordered and greater or equal  */ \
-                     m(RCmp,  ne) /* o x x o - ordered and not equal         */ \
-                     m(RCmp,   o) /* o x x x - ordered (no NaNs)             */ \
-                     m(RCmp,   u) /* x o o o - unordered (either NaNs)       */ \
-                     m(RCmp,  ue) /* x o o x - unordered or equal            */ \
-                     m(RCmp,  ul) /* x o x o - unordered or less             */ \
-                     m(RCmp, ule) /* x o x x - unordered or less or equal    */ \
-                     m(RCmp,  ug) /* x x o o - unordered or greater          */ \
-                     m(RCmp, uge) /* x x o x - unordered or greater or equal */ \
-                     m(RCmp, une) /* x x x o - unordered or not equal        */ \
-                     m(RCmp,   t) /* x x x x - always true                   */
+#define THORIN_F_CMP(m)           /* U G L E                                 */ \
+                     m(FCmp,   f) /* o o o o - always false                  */ \
+                     m(FCmp,   e) /* o o o x - ordered and equal             */ \
+                     m(FCmp,   l) /* o o x o - ordered and less              */ \
+                     m(FCmp,  le) /* o o x x - ordered and less or equal     */ \
+                     m(FCmp,   g) /* o x o o - ordered and greater           */ \
+                     m(FCmp,  ge) /* o x o x - ordered and greater or equal  */ \
+                     m(FCmp,  ne) /* o x x o - ordered and not equal         */ \
+                     m(FCmp,   o) /* o x x x - ordered (no NaNs)             */ \
+                     m(FCmp,   u) /* x o o o - unordered (either NaNs)       */ \
+                     m(FCmp,  ue) /* x o o x - unordered or equal            */ \
+                     m(FCmp,  ul) /* x o x o - unordered or less             */ \
+                     m(FCmp, ule) /* x o x x - unordered or less or equal    */ \
+                     m(FCmp,  ug) /* x x o o - unordered or greater          */ \
+                     m(FCmp, uge) /* x x o x - unordered or greater or equal */ \
+                     m(FCmp, une) /* x x x o - unordered or not equal        */ \
+                     m(FCmp,   t) /* x x x x - always true                   */
 
 /**
  * Table for all binary boolean operations.
@@ -193,9 +193,9 @@ enum class Bit    : tag_t { THORIN_BIT  (CODE) };
 enum class Shr    : tag_t { THORIN_SHR  (CODE) };
 enum class Wrap   : tag_t { THORIN_WRAP (CODE) };
 enum class Div    : tag_t { THORIN_DIV  (CODE) };
-enum class ROp    : tag_t { THORIN_R_OP (CODE) };
+enum class FOp    : tag_t { THORIN_F_OP (CODE) };
 enum class ICmp   : tag_t { THORIN_I_CMP(CODE) };
-enum class RCmp   : tag_t { THORIN_R_CMP(CODE) };
+enum class FCmp   : tag_t { THORIN_F_CMP(CODE) };
 enum class Trait  : tag_t { THORIN_TRAIT(CODE) };
 enum class Conv   : tag_t { THORIN_CONV (CODE) };
 enum class PE     : tag_t { THORIN_PE   (CODE) };
@@ -206,18 +206,18 @@ constexpr ICmp operator|(ICmp a, ICmp b) { return ICmp(flags_t(a) | flags_t(b));
 constexpr ICmp operator&(ICmp a, ICmp b) { return ICmp(flags_t(a) & flags_t(b)); }
 constexpr ICmp operator^(ICmp a, ICmp b) { return ICmp(flags_t(a) ^ flags_t(b)); }
 
-constexpr RCmp operator|(RCmp a, RCmp b) { return RCmp(flags_t(a) | flags_t(b)); }
-constexpr RCmp operator&(RCmp a, RCmp b) { return RCmp(flags_t(a) & flags_t(b)); }
-constexpr RCmp operator^(RCmp a, RCmp b) { return RCmp(flags_t(a) ^ flags_t(b)); }
+constexpr FCmp operator|(FCmp a, FCmp b) { return FCmp(flags_t(a) | flags_t(b)); }
+constexpr FCmp operator&(FCmp a, FCmp b) { return FCmp(flags_t(a) & flags_t(b)); }
+constexpr FCmp operator^(FCmp a, FCmp b) { return FCmp(flags_t(a) ^ flags_t(b)); }
 
 #define CODE(T, o) case T::o: return #T "_" #o;
 constexpr const char* op2str(Bit   o) { switch (o) { THORIN_BIT  (CODE) default: THORIN_UNREACHABLE; } }
 constexpr const char* op2str(Shr   o) { switch (o) { THORIN_SHR  (CODE) default: THORIN_UNREACHABLE; } }
 constexpr const char* op2str(Wrap  o) { switch (o) { THORIN_WRAP (CODE) default: THORIN_UNREACHABLE; } }
 constexpr const char* op2str(Div   o) { switch (o) { THORIN_DIV  (CODE) default: THORIN_UNREACHABLE; } }
-constexpr const char* op2str(ROp   o) { switch (o) { THORIN_R_OP (CODE) default: THORIN_UNREACHABLE; } }
+constexpr const char* op2str(FOp   o) { switch (o) { THORIN_F_OP (CODE) default: THORIN_UNREACHABLE; } }
 constexpr const char* op2str(ICmp  o) { switch (o) { THORIN_I_CMP(CODE) default: THORIN_UNREACHABLE; } }
-constexpr const char* op2str(RCmp  o) { switch (o) { THORIN_R_CMP(CODE) default: THORIN_UNREACHABLE; } }
+constexpr const char* op2str(FCmp  o) { switch (o) { THORIN_F_CMP(CODE) default: THORIN_UNREACHABLE; } }
 constexpr const char* op2str(Trait o) { switch (o) { THORIN_TRAIT(CODE) default: THORIN_UNREACHABLE; } }
 constexpr const char* op2str(Conv  o) { switch (o) { THORIN_CONV (CODE) default: THORIN_UNREACHABLE; } }
 constexpr const char* op2str(PE    o) { switch (o) { THORIN_PE   (CODE) default: THORIN_UNREACHABLE; } }
@@ -244,9 +244,9 @@ template<> constexpr auto Num<Bit  > = 0_s THORIN_BIT  (CODE);
 template<> constexpr auto Num<Shr  > = 0_s THORIN_SHR  (CODE);
 template<> constexpr auto Num<Wrap > = 0_s THORIN_WRAP (CODE);
 template<> constexpr auto Num<Div  > = 0_s THORIN_DIV  (CODE);
-template<> constexpr auto Num<ROp  > = 0_s THORIN_R_OP (CODE);
+template<> constexpr auto Num<FOp  > = 0_s THORIN_F_OP (CODE);
 template<> constexpr auto Num<ICmp > = 0_s THORIN_I_CMP(CODE);
-template<> constexpr auto Num<RCmp > = 0_s THORIN_R_CMP(CODE);
+template<> constexpr auto Num<FCmp > = 0_s THORIN_F_CMP(CODE);
 template<> constexpr auto Num<Trait> = 0_s THORIN_TRAIT(CODE);
 template<> constexpr auto Num<Conv > = 0_s THORIN_CONV (CODE);
 template<> constexpr auto Num<PE   > = 0_s THORIN_PE   (CODE);
@@ -258,9 +258,9 @@ template<> struct Tag2Enum_<Tag::Bit  > { using type = Bit;   };
 template<> struct Tag2Enum_<Tag::Shr  > { using type = Shr;   };
 template<> struct Tag2Enum_<Tag::Wrap > { using type = Wrap;  };
 template<> struct Tag2Enum_<Tag::Div  > { using type = Div;   };
-template<> struct Tag2Enum_<Tag::ROp  > { using type = ROp;   };
+template<> struct Tag2Enum_<Tag::FOp  > { using type = FOp;   };
 template<> struct Tag2Enum_<Tag::ICmp > { using type = ICmp;  };
-template<> struct Tag2Enum_<Tag::RCmp > { using type = RCmp;  };
+template<> struct Tag2Enum_<Tag::FCmp > { using type = FCmp;  };
 template<> struct Tag2Enum_<Tag::Trait> { using type = Trait; };
 template<> struct Tag2Enum_<Tag::Conv > { using type = Conv;  };
 template<> struct Tag2Enum_<Tag::PE   > { using type = PE;    };

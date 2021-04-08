@@ -13,11 +13,11 @@ GradEmitter::GradEmitter(Lam* orig_lam, Lam* grad_lam)
     , world_(orig_lam->world())
     , rewriter_(world_, &orig_scope_)
     , pullback_gens_ {{
-        [size_t(ROp::add)] = [this](auto op){ return pullback_for_add(op); },
-        [size_t(ROp::sub)] = [this](auto op){ return pullback_for_sub(op); },
-        [size_t(ROp::mul)] = [this](auto op){ return pullback_for_mul(op); },
-        [size_t(ROp::div)] = [this](auto op){ return pullback_for_div(op); },
-        [size_t(ROp::rem)] = nullptr,
+        [size_t(FOp::add)] = [this](auto op){ return pullback_for_add(op); },
+        [size_t(FOp::sub)] = [this](auto op){ return pullback_for_sub(op); },
+        [size_t(FOp::mul)] = [this](auto op){ return pullback_for_mul(op); },
+        [size_t(FOp::div)] = [this](auto op){ return pullback_for_div(op); },
+        [size_t(FOp::rem)] = nullptr,
     }}
 {
     check_initial_sanity();
@@ -100,7 +100,7 @@ const Def* GradEmitter::emit_partial_grad_for_rop_use(const Def* var, const Def*
             if (auto app = useuse->isa<App>()) {
                 if (auto maybe_axiom_app = app->callee()->isa<App>()) {
                     if (auto axiom = maybe_axiom_app->callee()->isa<Axiom>();
-                        axiom && axiom->tag() == Tag::ROp) {
+                        axiom && axiom->tag() == Tag::FOp) {
 
                         auto B = emit_pullback_for_rop(app);
                         auto op_grad = visited_.contains(app) ? *var_to_grads_[app]
@@ -126,7 +126,7 @@ const Def* GradEmitter::emit_partial_grad_for_ret_use(const Def* var, const Def*
     if (use->isa<Tuple>()) {
         for (auto useuse : use->uses()) {
             if (useuse == orig_lam_->body()) {
-                var_to_grads_[var] = world_.lit_real(as_lit(isa_sized_type(var->type())), u64(1.0));
+                var_to_grads_[var] = world_.lit_f(as_lit(isa_sized_type(var->type())), u64(1.0));
                 return *var_to_grads_[var];
             }
         }
@@ -186,8 +186,8 @@ const Def* GradEmitter::pullback_for_sub(const Def* op) {
     auto B = world_.nom_lam(pi, world_.dbg("B⁻"));
     auto var = B->var(world_.dbg("∂f"));
     auto var_w = as_lit(isa_sized_type(var->type()));
-    auto mul = world_.app(world_.ax(ROp::mul), { world_.lit_nat(var_w), world_.lit_nat(var_w) });
-    auto neg_var = world_.app(mul, { world_.lit_real(var_w, -1.0), var }, world_.dbg("∂ɟ"));
+    auto mul = world_.app(world_.ax(FOp::mul), { world_.lit_nat(var_w), world_.lit_nat(var_w) });
+    auto neg_var = world_.app(mul, { world_.lit_f(var_w, -1.0), var }, world_.dbg("∂ɟ"));
 
     B->set_filter(world_.lit_false());
     B->set_body(world_.tuple({ var, neg_var }));
@@ -206,9 +206,9 @@ const Def* GradEmitter::pullback_for_mul(const Def* op) {
     auto var = B->var(world_.dbg("∂f"));
     auto var_w = world_.lit_nat(as_lit(isa_sized_type(var->type())));
 
-    auto fst_mul = world_.app(world_.ax(ROp::mul), { var_w, snd_w });
+    auto fst_mul = world_.app(world_.ax(FOp::mul), { var_w, snd_w });
     auto fst_grad = world_.app(fst_mul, { var, snd_op }, world_.dbg("∂" + fst_op->debug().name));
-    auto snd_mul = world_.app(world_.ax(ROp::mul), { var_w, fst_w });
+    auto snd_mul = world_.app(world_.ax(FOp::mul), { var_w, fst_w });
     auto snd_grad = world_.app(snd_mul, { var, fst_op }, world_.dbg("∂" + snd_op->debug().name));
 
     B->set_filter(world_.lit_false());
@@ -227,18 +227,18 @@ const Def* GradEmitter::pullback_for_div(const Def* op) {
     auto B = world_.nom_lam(pi, world_.dbg("B÷"));
     auto var = B->var(world_.dbg("∂f"));
     auto var_w = as_lit(isa_sized_type(var->type()));
-    auto neg_mul = world_.app(world_.ax(ROp::mul), { world_.lit_nat(var_w), world_.lit_nat(var_w) });
-    auto neg_var = world_.app(neg_mul, { world_.lit_real(var_w, -1.0), var }, world_.dbg("∂ɟ"));
+    auto neg_mul = world_.app(world_.ax(FOp::mul), { world_.lit_nat(var_w), world_.lit_nat(var_w) });
+    auto neg_var = world_.app(neg_mul, { world_.lit_f(var_w, -1.0), var }, world_.dbg("∂ɟ"));
 
-    auto fst_div = world_.app(world_.ax(ROp::div), { world_.lit_nat(var_w), snd_w });
+    auto fst_div = world_.app(world_.ax(FOp::div), { world_.lit_nat(var_w), snd_w });
     auto fst_grad = world_.app(fst_div, { var, snd_op }, world_.dbg("∂" + fst_op->debug().name));
-    auto snd_up_mul = world_.app(world_.ax(ROp::mul), { world_.lit_nat(var_w), fst_w });
+    auto snd_up_mul = world_.app(world_.ax(FOp::mul), { world_.lit_nat(var_w), fst_w });
     auto snd_up_grad = world_.app(snd_up_mul, { neg_var, fst_op }, world_.dbg("∂" + snd_op->debug().name + "₀"));
-    auto snd_low_mul = world_.app(world_.ax(ROp::mul), { snd_w, snd_w });
+    auto snd_low_mul = world_.app(world_.ax(FOp::mul), { snd_w, snd_w });
     auto snd_low_grad = world_.app(snd_low_mul, { snd_op, snd_op }, world_.dbg("∂" + snd_op->debug().name + "₁"));
     auto snd_up_w = world_.lit_nat(as_lit(isa_sized_type(snd_up_grad->type())));
     auto snd_low_w = world_.lit_nat(as_lit(isa_sized_type(snd_low_grad->type())));
-    auto snd_div = world_.app(world_.ax(ROp::div), { snd_up_w, snd_low_w });
+    auto snd_div = world_.app(world_.ax(FOp::div), { snd_up_w, snd_low_w });
     auto snd_grad = world_.app(snd_div, { snd_up_grad, snd_low_grad }, world_.dbg("∂" + snd_op->debug().name));
 
     B->set_filter(world_.lit_false());
@@ -268,7 +268,7 @@ void GradEmitter::add_partial_grad(const Def* var, const Def* part_grad) {
     if (iter != var_to_grads_.end()) {
         auto part_grad_w = world_.lit_nat(as_lit(isa_sized_type(part_grad->type())));
         auto grad_so_far_w = world_.lit_nat(as_lit(isa_sized_type(iter->second->type())));
-        auto add = world_.app(world_.ax(ROp::add), { part_grad_w, grad_so_far_w });
+        auto add = world_.app(world_.ax(FOp::add), { part_grad_w, grad_so_far_w });
 
         var_to_grads_[var] = world_.app(add, { part_grad, iter->second }, world_.dbg("∂" + var->debug().name));
     } else {

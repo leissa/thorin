@@ -81,8 +81,8 @@ template<tag_t t> Query<Tag2Enum<t>, Tag2Def<t>> as(Tag2Enum<t> f, const Def* d)
 
 /// Checks whether @p type is an @p Int or a @p Real and returns its mod or width, respectively.
 inline const Def* isa_sized_type(const Def* type) {
-    if (auto int_ = isa<Tag:: Int>(type)) return int_->arg();
-    if (auto real = isa<Tag::Real>(type)) return real->arg();
+    if (auto i = isa<Tag::I>(type)) return i->arg();
+    if (auto f = isa<Tag::F>(type)) return f->arg();
     return nullptr;
 }
 

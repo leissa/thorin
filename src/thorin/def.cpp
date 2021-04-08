@@ -116,7 +116,7 @@ const Pi* Pi::restructure() {
 const Def* Arr::restructure() {
     auto& w = world();
     if (auto n = isa_lit(shape()))
-        return w.sigma(Array<const Def*>(*n, [&](size_t i) { return apply(w.lit_int(*n, i)).back(); }));
+        return w.sigma(Array<const Def*>(*n, [&](size_t i) { return apply(w.lit_i(*n, i)).back(); }));
     return nullptr;
 }
 
@@ -145,8 +145,8 @@ const Var* Def::var(const Def* dbg) {
     if (auto lam    = isa<Lam  >()) return w.var(lam ->dom(), lam,   dbg);
     if (auto pi     = isa<Pi   >()) return w.var(pi  ->dom(), pi,    dbg);
     if (auto sigma  = isa<Sigma>()) return w.var(sigma,          sigma, dbg);
-    if (auto arr    = isa<Arr  >()) return w.var(w.type_int(arr ->shape()), arr,  dbg); // TODO shapes like (2, 3)
-    if (auto pack   = isa<Pack >()) return w.var(w.type_int(pack->shape()), pack, dbg); // TODO shapes like (2, 3)
+    if (auto arr    = isa<Arr  >()) return w.var(w.type_i(arr ->shape()), arr,  dbg); // TODO shapes like (2, 3)
+    if (auto pack   = isa<Pack >()) return w.var(w.type_i(pack->shape()), pack, dbg); // TODO shapes like (2, 3)
     if (isa_bound(this)) return w.var(this, this,  dbg);
     THORIN_UNREACHABLE;
 }

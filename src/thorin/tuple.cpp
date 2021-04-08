@@ -14,12 +14,12 @@ const Def* proj(const Def* def, u64 a, u64 i, const Def* dbg) {
 
     if (auto arr = def->isa<Arr>()) {
         if (arr->arity()->isa<Top>()) return arr->body();
-        return arr->apply(world.lit_int(as_lit(arr->arity()), i)).back();
+        return arr->apply(world.lit_i(as_lit(arr->arity()), i)).back();
     }
 
     if (auto pack = def->isa<Pack>()) {
         if (pack->arity()->isa<Top>()) return pack->body();
-        return pack->apply(world.lit_int(as_lit(pack->arity()), i)).back();
+        return pack->apply(world.lit_i(as_lit(pack->arity()), i)).back();
     }
 
     if (def->sort() == Sort::Term) { return def->world().extract(def, a, i, dbg); }
