@@ -12,7 +12,7 @@ hash_t hash(const char* s) {
 }
 
 void debug_hash() {
-    errf("debug with: break {}:{}", __FILE__, __LINE__);
+    errln("debug with: break {}:{}", __FILE__, __LINE__);
 }
 
 }

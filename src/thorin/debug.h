@@ -38,6 +38,9 @@ struct Loc : public Streamable<Loc> {
     Stream& stream(Stream&) const;
 };
 
+inline bool operator==(Pos p1, Pos p2) { return p1.row == p2.row && p1.col == p2.col; }
+inline bool operator==(Loc l1, Loc l2) { return l1.begin == l2.begin && l1.finis == l2.finis && l1.file == l2.file; }
+
 class Debug {
 public:
     Debug() = default; // TODO remove
