@@ -33,13 +33,13 @@ public:
     std::string name() const { return entry_->debug().name; }
     //@}
 
-    /// @name Def%s bound/free in this Scope
+    /// @name Def%s live/free in this Scope
     //@{
-    bool bound(const Def* def) const { return bound().contains(def); }
-    const DefSet& bound()     const { calc_bound(); return bound_;     } ///< All @p Def%s within this @p Scope.
-    const DefSet& free_defs() const { calc_bound(); return free_defs_; } ///< All @em non-const @p Def%s @em directly referenced but @em not @p bound within this @p Scope. May also include @p Var%s or @em noms.
-    const VarSet& free_vars() const { calc_free (); return free_vars_; } ///< All @p Var%s that occurr free in this @p Scope. Does @em not transitively contain any free @p Var%s from @p noms.
-    const NomSet& free_noms() const { calc_free (); return free_noms_; } ///< All @em noms that occurr free in this @p Scope.
+    bool live(const Def* def) const { return live().contains(def); }
+    const DefSet& live()      const { liveness(); return live_;      }   ///< All @p Def%s live within this @p Scope.
+    const DefSet& free_defs() const { liveness(); return free_defs_; }   ///< All @em no_dep @p Def%s @em directly referenced but @em not @p live within this @p Scope. May also include @p Var%s or @em noms.
+    const VarSet& free_vars() const { calc_free (); return free_vars_; } ///< All @p Var%s that occur free in this @p Scope. Does @em not transitively contain any free @p Var%s from @p noms.
+    const NomSet& free_noms() const { calc_free (); return free_noms_; } ///< All @em noms that occur free in this @p Scope.
     //@}
 
     /// @name simple CFA to construct a CFG
@@ -53,15 +53,15 @@ public:
 
 private:
     void run();
-    void calc_bound() const;
+    void liveness() const;
     void calc_free() const;
 
     World& world_;
     Def* entry_ = nullptr;
     Def* exit_  = nullptr;
-    mutable bool has_bound_ = false;
+    mutable bool has_live_ = false;
     mutable bool has_free_  = false;
-    mutable DefSet bound_;
+    mutable DefSet live_;
     mutable DefSet free_defs_;
     mutable VarSet free_vars_;
     mutable NomSet free_noms_;

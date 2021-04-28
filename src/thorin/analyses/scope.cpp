@@ -22,7 +22,7 @@ Scope::Scope(Def* entry)
 Scope::~Scope() {}
 
 void Scope::run() {
-    unique_queue<DefSet&> queue(bound_);
+    unique_queue<DefSet&> queue(live_);
     queue.push(entry_->var());
 
     while (!queue.empty()) {
@@ -32,9 +32,9 @@ void Scope::run() {
     }
 }
 
-void Scope::calc_bound() const {
-    if (has_bound_) return;
-    has_bound_ = true;
+void Scope::liveness() const {
+    if (has_live_) return;
+    has_live_ = true;
 
     DefSet live;
     unique_queue<DefSet&> queue(live);
@@ -42,7 +42,7 @@ void Scope::calc_bound() const {
     auto enqueue = [&](const Def* def) {
         if (def->no_dep()) return;
 
-        if (bound_.contains(def))
+        if (live_.contains(def))
             queue.push(def);
         else
             free_defs_.emplace(def);
@@ -56,7 +56,7 @@ void Scope::calc_bound() const {
             enqueue(op);
     }
 
-    swap(live, bound_);
+    swap(live, live_);
 }
 
 void Scope::calc_free() const {
@@ -101,7 +101,7 @@ bool is_free(const Var* var, const Def* def) {
         if (p == var) return true;
 
     Scope scope(var->nom());
-    return scope.bound(def);
+    return scope.live(def);
 }
 
 }
