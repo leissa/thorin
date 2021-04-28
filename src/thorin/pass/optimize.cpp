@@ -7,11 +7,6 @@
 #include "thorin/pass/rw/ret_wrap.h"
 #include "thorin/pass/rw/bound_elim.h"
 
-// old stuff
-#include "thorin/transform/cleanup_world.h"
-#include "thorin/transform/flatten_tuples.h"
-#include "thorin/transform/partial_evaluation.h"
-
 namespace thorin {
 
 void optimize(World& world) {
@@ -23,11 +18,6 @@ void optimize(World& world) {
     .add<CopyProp>()
     //.add<Scalerize>()
     .run();
-
-    cleanup_world(world);
-    while (partial_evaluation(world, true)); // lower2cff
-    flatten_tuples(world);
-    cleanup_world(world);
 
     PassMan(world)
     .add<BoundElim>()
