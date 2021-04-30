@@ -89,8 +89,7 @@ public:
         using std::swap;
         swap((Stream&)a, (Stream&)b);
         swap(a.oss_, b.oss_);
-        // Pointers have to be restored so that this stream
-        // still holds the ownership over its ostringstream object.
+        // Pointers have to be restored so that this stream still holds the ownership over its ostringstream object.
         a.ostream_ = &a.oss_;
         b.ostream_ = &b.oss_;
     }
@@ -99,10 +98,10 @@ private:
     std::ostringstream oss_;
 };
 
-template<class... Args> auto outf(const char* fmt, Args&&... args) { return Stream(std::cout).fmt(fmt, std::forward<Args&&>(args)...); }
-template<class... Args> auto errf(const char* fmt, Args&&... args) { return Stream(std::cerr).fmt(fmt, std::forward<Args&&>(args)...); }
+template<class... Args> auto outf (const char* fmt, Args&&... args) { return Stream(std::cout).fmt(fmt, std::forward<Args&&>(args)...); }
+template<class... Args> auto errf (const char* fmt, Args&&... args) { return Stream(std::cerr).fmt(fmt, std::forward<Args&&>(args)...); }
 template<class... Args> auto outln(const char* fmt, Args&&... args) { return outf(fmt, std::forward<Args&&>(args)...).endl(); }
-template<class... Args> auto errln(const char* fmt, Args&&... args) { return outf(fmt, std::forward<Args&&>(args)...).endl(); }
+template<class... Args> auto errln(const char* fmt, Args&&... args) { return errf(fmt, std::forward<Args&&>(args)...).endl(); }
 
 template<class C>
 class Streamable {
