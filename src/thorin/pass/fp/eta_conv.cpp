@@ -5,7 +5,7 @@
 namespace thorin {
 
 const Def* EtaConv::rewrite(const Def* def) {
-    if (def->isa<Var>() || def->isa<Proxy>()) return def;
+    if (isa<Var>(def) || isa<Proxy>(def)) return def;
 
     for (size_t i = 0, e = def->num_ops(); i != e; ++i) {
         if (auto lam = def->op(i)->isa_nom<Lam>(); !ignore(lam)) {
@@ -27,7 +27,7 @@ const Def* EtaConv::rewrite(const Def* def) {
 
             if (wrappers_.contains(lam)) continue;
 
-            if (auto app = lam->body()->isa<App>()) {
+            if (auto app = isa<App>(lam->body())) {
                 if (app->arg() == lam->var() && !is_free(lam->var(), app->callee())) {
                     auto new_def = def->refine(i, app->callee());
                     world().DLOG("eta-reduction '{}' -> '{}' by eliminating '{}'", def, new_def, lam);

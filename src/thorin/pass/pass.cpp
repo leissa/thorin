@@ -146,7 +146,7 @@ const Def* PassMan::rewrite(const Def* old_def) {
 
 void PassMan::enqueue(const Def* def) {
     if (def->no_dep() || enqueued(def)) return;
-    assert(!def->isa<Proxy>() && "proxies must not occur anymore after finishing a nom with No_Undo");
+    assert(!isa<Proxy>(def) && "proxies must not occur anymore after finishing a nom with No_Undo");
 
     enqueue(def->type());
     if (auto dbg = def->dbg()) enqueue(dbg);

@@ -4,7 +4,7 @@ namespace thorin {
 
 static const Def* get_sloxy_type(const Proxy* sloxy) { return as<Tag::Ptr>(sloxy->type())->arg(0); }
 static Lam* get_sloxy_lam(const Proxy* sloxy) { return sloxy->op(0)->as_nom<Lam>(); }
-static std::tuple<const Proxy*, Lam*> split_phixy(const Proxy* phixy) { return {phixy->op(0)->as<Proxy>(), phixy->op(1)->as_nom<Lam>()}; }
+static std::tuple<const Proxy*, Lam*> split_phixy(const Proxy* phixy) { return {as<Proxy>(phixy->op(0)), phixy->op(1)->as_nom<Lam>()}; }
 
 void SSAConstr::enter() {
     if (auto lam = cur_nom<Lam>()) {
@@ -45,7 +45,7 @@ const Def* SSAConstr::rewrite(const Def* def) {
                 return mem;
             }
         }
-    } else if (auto app = def->isa<App>()) {
+    } else if (auto app = isa<App>(def)) {
         if (auto mem_lam = app->callee()->isa_nom<Lam>(); !ignore(mem_lam))
             return mem2phi(cur_lam, app, mem_lam);
     }
@@ -138,8 +138,8 @@ undo_t SSAConstr::analyze() {
 
 undo_t SSAConstr::analyze(const Def* def) {
     auto cur_lam = cur_nom<Lam>();
-    if (cur_lam == nullptr || def->no_dep() || def->isa_nom() || def->isa<Var>() || !analyzed_.emplace(def).second) return No_Undo;
-    if (auto proxy = def->isa<Proxy>(); proxy && proxy->id() != proxy_id()) return No_Undo;
+    if (cur_lam == nullptr || def->no_dep() || def->isa_nom() || isa<Var>(def) || !analyzed_.emplace(def).second) return No_Undo;
+    if (auto proxy = isa<Proxy>(def); proxy && proxy->id() != proxy_id()) return No_Undo;
 
     if (auto sloxy = isa_proxy(def, Sloxy)) {
         auto sloxy_lam = get_sloxy_lam(sloxy);

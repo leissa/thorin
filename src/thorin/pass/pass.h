@@ -50,11 +50,11 @@ public:
     const Proxy* proxy(const Def* type, Defs ops, flags_t flags, const Def* dbg = {}) { return world().proxy(type, ops, proxy_id(), flags, dbg); }
     /// @name Check whether given @c def is a Proxy whose index matches this @p Pass's @p index.
     const Proxy* isa_proxy(const Def* def, flags_t flags = 0) {
-        if (auto proxy = def->isa<Proxy>(); proxy != nullptr && proxy->id() == proxy_id() && proxy->flags() == flags) return proxy;
+        if (auto proxy = isa<Proxy>(def); proxy != nullptr && proxy->id() == proxy_id() && proxy->flags() == flags) return proxy;
         return nullptr;
     }
     const Proxy* as_proxy(const Def* def, flags_t flags = 0) {
-        auto proxy = def->as<Proxy>();
+        auto proxy = as<Proxy>(def);
         assert(proxy->id() == proxy_id() && proxy->flags() == flags);
         return proxy;
     }
@@ -154,7 +154,7 @@ public:
         if constexpr(std::is_same<T, Def>::value)
             return cur_nom_ ;
         else
-            return cur_nom_ ? cur_nom_->template isa<T>() : nullptr;
+            return cur_nom_ ? isa<T>(cur_nom_) : nullptr;
     }
 
 private:
@@ -274,8 +274,8 @@ protected:
     template<class T = Def>
     T* descend(const Def* def) {
         auto cur_nom = man().template cur_nom<T>();
-        if (cur_nom == nullptr || def->no_dep() || def->isa_nom() || def->isa<Var>() || analyzed(def)) return nullptr;
-        if (auto proxy = def->isa<Proxy>(); proxy && proxy->id() != proxy_id()) return nullptr;
+        if (cur_nom == nullptr || def->no_dep() || def->isa_nom() || isa<Var>(def) || analyzed(def)) return nullptr;
+        if (auto proxy = isa<Proxy>(def); proxy && proxy->id() != proxy_id()) return nullptr;
         return cur_nom;
     }
 
@@ -291,7 +291,7 @@ private:
 };
 
 inline World& RWPass::world() { return man().world(); }
-inline const App* is_callee(const Def* def, size_t i) { return i == 0 ? def->isa<App>() : nullptr; }
+inline const App* is_callee(const Def* def, size_t i) { return i == 0 ? isa<App>(def) : nullptr; }
 
 template<class T = Def> T* RWPass::cur_nom() const { return man().template cur_nom<T>(); }
 

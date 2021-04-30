@@ -13,7 +13,7 @@ size_t Bound::find(const Def* type) const {
 }
 
 const Lit* Bound::index(const Def* type) const { return world().lit_i(num_ops(), find(type)); }
-const Sigma* Bound::convert() const { return isa<Join>() ? as<Join>()->convert() : as<Meet>()->convert(); }
+const Sigma* Bound::convert() const { return isa<Join>(this) ? as<Join>(this)->convert() : as<Meet>(this)->convert(); }
 
 template<bool up>
 const Sigma* TBound<up>::convert() const {
@@ -35,9 +35,9 @@ const Sigma* TBound<up>::convert() const {
         assert(size % align == 0);
         auto arr = w.arr(size / align, w.type_i_width(align * 8_u64));
 
-        return w.sigma({w.type_i(num_ops()), arr})->as<Sigma>();
+        return as<Sigma>(w.sigma({w.type_i(num_ops()), arr}));
     } else {
-        return w.sigma(ops())->as<Sigma>();
+        return as<Sigma>(w.sigma(ops()));
     }
 }
 

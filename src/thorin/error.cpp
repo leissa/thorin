@@ -16,7 +16,7 @@ void ErrorHandler::index_out_of_range(const Def* arity, const Def* index) {
 }
 
 void ErrorHandler::ill_typed_app(const Def* callee, const Def* arg) {
-    errln("cannot pass argument '{} of type '{}' to '{}' of domain '{}'", arg, arg->type(), callee, callee->type()->as<Pi>()->dom());
+    errln("cannot pass argument '{} of type '{}' to '{}' of domain '{}'", arg, arg->type(), callee, as<Pi>(callee->type())->dom());
 }
 
 }

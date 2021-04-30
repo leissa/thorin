@@ -23,18 +23,18 @@ const Def* BoundElim::rewrite(Def* old_nom, const Def* new_type, const Def* new_
 }
 
 const Def* BoundElim::rewrite(const Def* old_def, const Def*, Defs new_ops, const Def* new_dbg) {
-    if (auto vel = old_def->isa<Vel>()) {
-        auto join  = vel->type()->as<Join>();
+    if (auto vel = isa<Vel>(old_def)) {
+        auto join  = as<Join>(vel->type());
         auto value = new_ops[0];
         auto sigma = join->convert();
         auto val   = world().op_bitcast(sigma->op(1), value, new_dbg);
         return world().tuple(sigma, {world().lit_i(join->num_ops(), join->find(vel->value()->type())), val});
-    } else if (auto test = old_def->isa<Test>()) {
+    } else if (auto test = isa<Test>(old_def)) {
         auto [value, probe, match, clash] = new_ops.to_array<4>();
         auto [index, box] = value->split<2>();
 
-        auto join = test->value()->type()->as<Join>();
-        auto mpi = match->type()->as<Pi>();
+        auto join = as<Join>(test->value()->type());
+        auto mpi = as<Pi>(match->type());
         auto dom = mpi->dom()->out(0);
         auto wpi = world().pi(dom, mpi->codom());
         auto wrap = world().nom_lam(wpi, world().dbg("wrap_match"));
@@ -42,10 +42,10 @@ const Def* BoundElim::rewrite(const Def* old_def, const Def*, Defs new_ops, cons
         wrap->app(match, {wrap->var(), world().op_bitcast(probe, box)});
         auto cmp = world().op(ICmp::e, index, probe_i);
         return world().select(wrap, clash, cmp, new_dbg);
-    } else if (auto et = old_def->isa<Et>()) {
-        return world().tuple(et->type()->as<Meet>()->convert(), new_ops, new_dbg);
-    } else if (auto pick = old_def->isa<Pick>()) {
-        auto meet = pick->value()->type()->as<Meet>();
+    } else if (auto et = isa<Et>(old_def)) {
+        return world().tuple(as<Meet>(et->type())->convert(), new_ops, new_dbg);
+    } else if (auto pick = isa<Pick>(old_def)) {
+        auto meet = as<Meet>(pick->value()->type());
         auto index = meet->index(pick->type());
         return world().extract(new_ops[0], index, new_dbg);
     }

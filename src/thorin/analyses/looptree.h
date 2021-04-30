@@ -31,7 +31,7 @@ public:
     * The root node is a @p Head without any CFNode%s but further children and @p depth_ -1.
     * Thus, the forest is pooled into a tree.
     */
-    class Base : public RuntimeCast<Base>, public Streamable<LoopTree<forward>> {
+    class Base : public Streamable<LoopTree<forward>> {
     public:
         enum class Node { Head, Leaf };
 
@@ -110,7 +110,7 @@ public:
 private:
     static void get_nodes(std::vector<const Base *>& nodes, const Base* node) {
         nodes.push_back(node);
-        if (auto head = node->template isa<Head>()) {
+        if (auto head = isa<Head>(node)) {
             for (const auto& child : head->children())
                 get_nodes(nodes, child.get());
         }

@@ -69,6 +69,7 @@ public:
     size_t index() const { return tagged_ptr_.index(); }
     const Def* def() const { return tagged_ptr_.ptr(); }
     operator const Def*() const { return tagged_ptr_; }
+    const Def* operator*() const { return tagged_ptr_; }
     const Def* operator->() const { return tagged_ptr_; }
     bool operator==(Use other) const { return this->tagged_ptr_ == other.tagged_ptr_; }
 
@@ -106,7 +107,7 @@ enum : unsigned {
  * This means that any subclass of @p Def must not introduce additional members.
  * See also @p Def::extended_ops.
  */
-class Def : public RuntimeCast<Def>, public Streamable<Def> {
+class Def : public Streamable<Def> {
 public:
     using NormalizeFn = const Def* (*)(const Def*, const Def*, const Def*, const Def*);
 
@@ -229,18 +230,18 @@ public:
     /// If @c this is @em nom, it will cast constness away and perform a dynamic cast to @p T.
     template<class T = Def, bool invert = false> T* isa_nom() const {
         if constexpr(std::is_same<T, Def>::value)
-            return nom_ ^ invert ? const_cast<Def*>(this) : nullptr;
+            return nom_ ^ invert ?        const_cast<Def*>(this)  : nullptr;
         else
-            return nom_ ^ invert ? const_cast<Def*>(this)->template isa<T>() : nullptr;
+            return nom_ ^ invert ? isa<T>(const_cast<Def*>(this)) : nullptr;
     }
     template<class T = Def> const T* isa_structural() const { return isa_nom<T, true>(); }
     /// Asserts that @c this is a @em nom, casts constness away and performs a static cast to @p T (checked in Debug build).
     template<class T = Def, bool invert = false> T* as_nom() const {
         assert(nom_ ^ invert);
         if constexpr(std::is_same<T, Def>::value)
-            return const_cast<Def*>(this);
+            return       const_cast<Def*>(this) ;
         else
-            return const_cast<Def*>(this)->template as<T>();
+            return as<T>(const_cast<Def*>(this));
     }
     template<class T = Def> const T* as_structural() const { return as_nom<T, true>(); }
     //@}
@@ -332,7 +333,7 @@ protected:
 
 template<class T>
 const T* isa(fields_t f, const Def* def) {
-    if (auto d = def->template isa<T>(); d && d->fields() == f) return d;
+    if (auto d = isa<T>(def); d && d->fields() == f) return d;
     return nullptr;
 }
 
@@ -457,11 +458,11 @@ public:
 
 template<class T = u64> std::optional<T> isa_lit(const Def* def) {
     if (def == nullptr) return {};
-    if (auto lit = def->isa<Lit>()) return lit->get<T>();
+    if (auto lit = isa<Lit>(def)) return lit->get<T>();
     return {};
 }
 
-template<class T = u64> T as_lit(const Def* def) { return def->as<Lit>()->get<T>(); }
+template<class T = u64> T as_lit(const Def* def) { return as<Lit>(def)->get<T>(); }
 
 class Nat : public Def {
 private:

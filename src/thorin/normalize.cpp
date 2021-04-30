@@ -193,7 +193,7 @@ template<nat_t dw, nat_t sw> struct FoldConv<Conv::f2f, dw, sw> { static Res run
 template<class O>
 static void commute(O op, const Def*& a, const Def*& b) {
     if (is_commutative(op)) {
-        if (b->isa<Lit>() || (a->gid() > b->gid() && !a->isa<Lit>())) // swap lit to left, or smaller gid to left if no lit present
+        if (isa<Lit>(b) || (a->gid() > b->gid() && !isa<Lit>(a))) // swap lit to left, or smaller gid to left if no lit present
             std::swap(a, b);
     }
 }
@@ -215,11 +215,11 @@ template<tag_t tag>
 static const Def* reassociate(Tag2Enum<tag> op, World& world, [[maybe_unused]] const App* ab, const Def* a, const Def* b, const Def* dbg) {
     if (!is_associative(op)) return nullptr;
 
-    auto la = a->isa<Lit>();
+    auto la = isa<Lit>(a);
     auto xy = isa<tag>(op, a);
     auto zw = isa<tag>(op, b);
-    auto lx = xy ? xy->arg(0)->template isa<Lit>() : nullptr;
-    auto lz = zw ? zw->arg(0)->template isa<Lit>() : nullptr;
+    auto lx = xy ? isa<Lit>(xy->arg(0)) : nullptr;
+    auto lz = zw ? isa<Lit>(zw->arg(0)) : nullptr;
     auto  y = xy ? xy->arg(1) : nullptr;
     auto  w = zw ? zw->arg(1) : nullptr;
 
@@ -259,9 +259,9 @@ static const Def* reassociate(Tag2Enum<tag> op, World& world, [[maybe_unused]] c
 template<class Op, Op op>
 static const Def* fold(World& world, const Def* type, const App* callee, const Def*& a, const Def*& b, const Def* dbg) {
     static constexpr int min_w = std::is_same_v<Op, FOp> || std::is_same_v<Op, FCmp> ? 16 : 1;
-    auto la = a->isa<Lit>(), lb = b->isa<Lit>();
+    auto la = isa<Lit>(a), lb = isa<Lit>(b);
 
-    if (a->isa<Bot>() || b->isa<Bot>()) return world.bot(type, dbg);
+    if (isa<Bot>(a) || isa<Bot>(b)) return world.bot(type, dbg);
 
     if (la && lb) {
         nat_t width;
@@ -272,7 +272,7 @@ static const Def* fold(World& world, const Def* type, const App* callee, const D
             nuw = mode & WMode::nuw;
             width = w;
         } else {
-            width = as_lit(a->type()->as<App>()->arg());
+            width = as_lit(as<App>(a->type())->arg());
         }
 
         if (is_i<Op>()) width = *mod2width(width);
@@ -333,7 +333,7 @@ static const Def* merge_cmps(std::array<std::array<uint64_t, 2>, 2> tab, const D
 template<Bit op>
 const Def* normalize_Bit(const Def* type, const Def* c, const Def* arg, const Def* dbg) {
     auto& world = type->world();
-    auto callee = c->as<App>();
+    auto callee = as<App>(c);
     auto [a, b] = arg->split<2>();
     auto w = isa_lit(callee->arg());
 
@@ -476,13 +476,13 @@ const Def* normalize_Bit(const Def* type, const Def* c, const Def* arg, const De
 template<Shr op>
 const Def* normalize_Shr(const Def* type, const Def* c, const Def* arg, const Def* dbg) {
     auto& world = type->world();
-    auto callee = c->as<App>();
+    auto callee = as<App>(c);
     auto [a, b] = arg->split<2>();
     auto w = isa_lit(callee->arg());
 
     if (auto result = fold<Shr, op>(world, type, callee, a, b, dbg)) return result;
 
-    if (auto la = a->isa<Lit>()) {
+    if (auto la = isa<Lit>(a)) {
         if (la == world.lit_i(*w, 0)) {
             switch (op) {
                 case Shr::ashr: return la;
@@ -492,7 +492,7 @@ const Def* normalize_Shr(const Def* type, const Def* c, const Def* arg, const De
         }
     }
 
-    if (auto lb = b->isa<Lit>()) {
+    if (auto lb = isa<Lit>(b)) {
         if (lb == world.lit_i(*w, 0)) {
             switch (op) {
                 case Shr::ashr: return a;
@@ -510,13 +510,13 @@ const Def* normalize_Shr(const Def* type, const Def* c, const Def* arg, const De
 template<Wrap op>
 const Def* normalize_Wrap(const Def* type, const Def* c, const Def* arg, const Def* dbg) {
     auto& world = type->world();
-    auto callee = c->as<App>();
+    auto callee = as<App>(c);
     auto [a, b] = arg->split<2>();
     auto [m, w] = callee->args<2>(isa_lit<nat_t>); // mode and width
 
     if (auto result = fold<Wrap, op>(world, type, callee, a, b, dbg)) return result;
 
-    if (auto la = a->isa<Lit>()) {
+    if (auto la = isa<Lit>(a)) {
         if (la == world.lit_i(*w, 0)) {
             switch (op) {
                 case Wrap::add: return b;    // 0  + b -> b
@@ -538,7 +538,7 @@ const Def* normalize_Wrap(const Def* type, const Def* c, const Def* arg, const D
         }
     }
 
-    if (auto lb = b->isa<Lit>()) {
+    if (auto lb = isa<Lit>(b)) {
         if (lb == world.lit_i(*w, 0)) {
             switch (op) {
                 case Wrap::sub: return a;    // a  - 0 -> a
@@ -572,19 +572,19 @@ const Def* normalize_Wrap(const Def* type, const Def* c, const Def* arg, const D
 template<Div op>
 const Def* normalize_Div(const Def* type, const Def* c, const Def* arg, const Def* dbg) {
     auto& world = type->world();
-    auto callee = c->as<App>();
+    auto callee = as<App>(c);
     auto [mem, a, b] = arg->split<3>();
     auto w = isa_lit(callee->arg());
-    type = type->as<Sigma>()->op(1); // peel of actual type
+    type = as<Sigma>(type)->op(1); // peel of actual type
     auto make_res = [&](const Def* res) { return world.tuple({mem, res}, dbg); };
 
     if (auto result = fold<Div, op>(world, type, callee, a, b, dbg)) return make_res(result);
 
-    if (auto la = a->isa<Lit>()) {
+    if (auto la = isa<Lit>(a)) {
         if (la == world.lit_i(*w, 0)) return make_res(la); // 0 / b -> 0 and 0 % b -> 0
     }
 
-    if (auto lb = b->isa<Lit>()) {
+    if (auto lb = isa<Lit>(b)) {
         if (lb == world.lit_i(*w, 0)) return make_res(world.bot(type)); // a / 0 -> ⊥ and a % 0 -> ⊥
 
         if (lb == world.lit_i(*w, 1)) {
@@ -614,7 +614,7 @@ const Def* normalize_Div(const Def* type, const Def* c, const Def* arg, const De
 template<FOp op>
 const Def* normalize_FOp(const Def* type, const Def* c, const Def* arg, const Def* dbg) {
     auto& world = type->world();
-    auto callee = c->as<App>();
+    auto callee = as<App>(c);
     auto [a, b] = arg->split<2>();
     auto [m, w] = callee->args<2>(isa_lit<nat_t>); // mode and width
 
@@ -622,7 +622,7 @@ const Def* normalize_FOp(const Def* type, const Def* c, const Def* arg, const De
 
     // TODO check rmode properly
     if (m && *m == RMode::fast) {
-        if (auto la = a->isa<Lit>()) {
+        if (auto la = isa<Lit>(a)) {
             if (la == world.lit_f(*w, 0.0)) {
                 switch (op) {
                     case FOp::add: return b;    // 0 + b -> b
@@ -646,7 +646,7 @@ const Def* normalize_FOp(const Def* type, const Def* c, const Def* arg, const De
             }
         }
 
-        if (auto lb = b->isa<Lit>()) {
+        if (auto lb = isa<Lit>(b)) {
             if (lb == world.lit_f(*w, 0.0)) {
                 switch (op) {
                     case FOp::sub: return a;    // a - 0 -> a
@@ -678,7 +678,7 @@ const Def* normalize_FOp(const Def* type, const Def* c, const Def* arg, const De
 template<ICmp op>
 const Def* normalize_ICmp(const Def* type, const Def* c, const Def* arg, const Def* dbg) {
     auto& world = type->world();
-    auto callee = c->as<App>();
+    auto callee = as<App>(c);
     auto [a, b] = arg->split<2>();
 
     if (auto result = fold<ICmp, op>(world, type, callee, a, b, dbg)) return result;
@@ -691,7 +691,7 @@ const Def* normalize_ICmp(const Def* type, const Def* c, const Def* arg, const D
 template<FCmp op>
 const Def* normalize_FCmp(const Def* type, const Def* c, const Def* arg, const Def* dbg) {
     auto& world = type->world();
-    auto callee = c->as<App>();
+    auto callee = as<App>(c);
     auto [a, b] = arg->split<2>();
 
     if (auto result = fold<FCmp, op>(world, type, callee, a, b, dbg)) return result;
@@ -711,7 +711,7 @@ const Def* normalize_Trait(const Def*, const Def* callee, const Def* type, const
     if (auto ptr = isa<Tag::Ptr>(type)) {
         return world.lit_nat(8);
     } else if (auto int_ = isa<Tag::I>(type)) {
-        if (int_->type()->isa<Top>()) return world.lit_nat(8);
+        if (isa<Top>(int_->type())) return world.lit_nat(8);
         if (auto w = isa_lit(int_->arg())) {
             if (*w == 0) return world.lit_nat(8);
             if (*w <= 0x0000'0000'0000'0100_u64) return world.lit_nat(1);
@@ -728,7 +728,7 @@ const Def* normalize_Trait(const Def*, const Def* callee, const Def* type, const
                 default: THORIN_UNREACHABLE;
             }
         }
-    } else if (type->isa<Sigma>() || type->isa<Meet>()) {
+    } else if (isa<Sigma>(type) || isa<Meet>(type)) {
         u64 offset = 0;
         u64 align = 1;
         for (auto t : type->ops()) {
@@ -759,7 +759,7 @@ const Def* normalize_Trait(const Def*, const Def* callee, const Def* type, const
             u64 factor = std::max(*a, *s);
             return world.lit_nat(factor * *shape);
         }
-    } else if (auto join = type->isa<Join>()) {
+    } else if (auto join = isa<Join>(type)) {
         if (auto sigma = join->convert()) return world.op(op, sigma, dbg);
     }
 
@@ -776,10 +776,10 @@ out:
 template<nat_t min_sw, nat_t min_dw, Conv op>
 static const Def* fold_Conv(const Def* dst_type, const App* callee, const Def* src, const Def* dbg) {
     auto& world = dst_type->world();
-    if (src->isa<Bot>()) return world.bot(dst_type, dbg);
+    if (isa<Bot>(src)) return world.bot(dst_type, dbg);
 
     auto [lit_dw, lit_sw] = callee->args<2>(isa_lit<nat_t>);
-    auto lit_src = src->isa<Lit>();
+    auto lit_src = isa<Lit>(src);
     if (lit_src && lit_dw && lit_sw) {
         if (op == Conv::u2u) {
             if (*lit_dw == 0) return world.lit(dst_type, as_lit(lit_src));
@@ -807,7 +807,7 @@ static const Def* fold_Conv(const Def* dst_type, const App* callee, const Def* s
 template<Conv op>
 const Def* normalize_Conv(const Def* dst_type, const Def* c, const Def* src, const Def* dbg) {
     auto& world = dst_type->world();
-    auto callee = c->as<App>();
+    auto callee = as<App>(c);
 
     static constexpr auto min_sw = op == Conv::f2s || op == Conv::f2u || op == Conv::f2f ? 16 : 1;
     static constexpr auto min_dw = op == Conv::s2f || op == Conv::u2f || op == Conv::f2f ? 16 : 1;
@@ -845,14 +845,14 @@ const Def* normalize_Acc(const Def* type, const Def* callee, const Def* arg, con
 const Def* normalize_bitcast(const Def* dst_type, const Def* callee, const Def* src, const Def* dbg) {
     auto& world = dst_type->world();
 
-    if (src->isa<Bot>())         return world.bot(dst_type);
+    if (isa<Bot>(src))         return world.bot(dst_type);
     if (src->type() == dst_type) return src;
 
     if (auto other = isa<Tag::Bitcast>(src))
         return other->arg()->type() == dst_type ? other->arg() : world.op_bitcast(dst_type, other->arg(), dbg);
 
-    if (auto lit = src->isa<Lit>()) {
-        if (dst_type->isa<Nat>()) return world.lit(dst_type, lit->get(), dbg);
+    if (auto lit = isa<Lit>(src)) {
+        if (isa<Nat>(dst_type)) return world.lit(dst_type, lit->get(), dbg);
         if (isa_sized_type(dst_type)) return world.lit(dst_type, lit->get(), dbg);
     }
 
@@ -875,10 +875,10 @@ const Def* normalize_load(const Def* type, const Def* callee, const Def* arg, co
     auto [mem, ptr] = arg->split<2>();
     auto [pointee, addr_space] = as<Tag::Ptr>(ptr->type())->args<2>();
 
-    if (ptr->isa<Bot>()) return world.tuple({mem, world.bot(type->as<Sigma>()->op(1))}, dbg);
+    if (isa<Bot>(ptr)) return world.tuple({mem, world.bot(as<Sigma>(type)->op(1))}, dbg);
 
     // loading an empty tuple can only result in an empty tuple
-    if (auto sigma = pointee->isa<Sigma>(); sigma && sigma->num_ops() == 0)
+    if (auto sigma = isa<Sigma>(pointee); sigma && sigma->num_ops() == 0)
         return world.tuple({mem, world.tuple(sigma->type(), {}, dbg)});
 
     return world.raw_app(callee, {mem, ptr}, dbg);
@@ -888,10 +888,10 @@ const Def* normalize_store(const Def* type, const Def* callee, const Def* arg, c
     auto& world = type->world();
     auto [mem, ptr, val] = arg->split<3>();
 
-    if (ptr->isa<Bot>() || val->isa<Bot>()) return mem;
-    if (auto pack = val->isa<Pack>(); pack && pack->body()->isa<Bot>()) return mem;
-    if (auto tuple = val->isa<Tuple>()) {
-        if (std::all_of(tuple->ops().begin(), tuple->ops().end(), [&](const Def* op) { return op->isa<Bot>(); }))
+    if (isa<Bot>(ptr) || isa<Bot>(val)) return mem;
+    if (auto pack = isa<Pack>(val); pack && isa<Bot>(pack->body())) return mem;
+    if (auto tuple = isa<Tuple>(val)) {
+        if (std::all_of(tuple->ops().begin(), tuple->ops().end(), [&](const Def* op) { return isa<Bot>(op); }))
             return mem;
     }
 
@@ -905,18 +905,18 @@ static const Def* tangent_vector_type(const Def* primal_type) {
         return primal_type;
     }
 
-    if (auto arr = primal_type->isa<Arr>()) {
+    if (auto arr = isa<Arr>(primal_type)) {
         auto elem_tangent_type = world.type_tangent_vector(arr->op(1));
 
         // Array of non-differentiable elements is non-differentiable
-        if (auto sigma = elem_tangent_type->isa<Sigma>(); sigma && sigma->num_ops() == 0) {
+        if (auto sigma = isa<Sigma>(elem_tangent_type); sigma && sigma->num_ops() == 0) {
             return world.sigma();
         }
 
         return world.arr(arr->op(0), elem_tangent_type);
     }
 
-    if (auto sigma = primal_type->isa<Sigma>()) {
+    if (auto sigma = isa<Sigma>(primal_type)) {
         auto num_ops = sigma->num_ops();
 
         // Σs with a mem are function vars.
@@ -947,7 +947,7 @@ const Def* normalize_tangent(const Def*, const Def* callee, const Def* arg, cons
 
 const Def* normalize_lift(const Def* type, const Def* c, const Def* arg, const Def* dbg) {
     auto& w = type->world();
-    auto callee = c->as<App>();
+    auto callee = as<App>(c);
     auto is_os = callee->arg();
     auto [n_i, Is, n_o, Os, f] = is_os->split<5>();
     auto [r, s] = callee->decurry()->args<2>();

@@ -64,7 +64,7 @@ template<tag_t tag>
 Query<Tag2Enum<tag>, Tag2Def<tag>> isa(const Def* def) {
     auto [axiom, currying_depth] = get_axiom(def);
     if (axiom && axiom->tag() == tag && currying_depth == 0)
-        return {axiom, def->as<Tag2Def<tag>>()};
+        return {axiom, as<Tag2Def<tag>>(def)};
     return {};
 }
 
@@ -72,12 +72,12 @@ template<tag_t tag>
 Query<Tag2Enum<tag>, Tag2Def<tag>> isa(Tag2Enum<tag> flags, const Def* def) {
     auto [axiom, currying_depth] = get_axiom(def);
     if (axiom && axiom->tag() == tag && axiom->flags() == flags_t(flags) && currying_depth == 0)
-        return {axiom, def->as<Tag2Def<tag>>()};
+        return {axiom, as<Tag2Def<tag>>(def)};
     return {};
 }
 
-template<tag_t t> Query<Tag2Enum<t>, Tag2Def<t>> as(               const Def* d) { assert( isa<t>(   d) ); return {std::get<0>(get_axiom(d)), d->as<App>()}; }
-template<tag_t t> Query<Tag2Enum<t>, Tag2Def<t>> as(Tag2Enum<t> f, const Def* d) { assert((isa<t>(f, d))); return {std::get<0>(get_axiom(d)), d->as<App>()}; }
+template<tag_t t> Query<Tag2Enum<t>, Tag2Def<t>> as(               const Def* d) { assert( isa<t>(   d) ); return {std::get<0>(get_axiom(d)), as<App>(d)}; }
+template<tag_t t> Query<Tag2Enum<t>, Tag2Def<t>> as(Tag2Enum<t> f, const Def* d) { assert((isa<t>(f, d))); return {std::get<0>(get_axiom(d)), as<App>(d)}; }
 
 /// Checks whether @p type is an @p Int or a @p Real and returns its mod or width, respectively.
 inline const Def* isa_sized_type(const Def* type) {

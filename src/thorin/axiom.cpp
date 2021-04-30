@@ -6,7 +6,7 @@ Axiom::Axiom(NormalizeFn normalizer, const Def* type, u32 tag, u32 flags, const 
     : Def(Node, type, Defs{}, (nat_t(tag) << 32_u64) | nat_t(flags), dbg)
 {
     u16 currying_depth = 0;
-    while (auto pi = type->isa<Pi>()) {
+    while (auto pi = isa<Pi>(type)) {
         ++currying_depth;
         type = pi->codom();
     }
@@ -15,11 +15,11 @@ Axiom::Axiom(NormalizeFn normalizer, const Def* type, u32 tag, u32 flags, const 
 }
 
 std::tuple<const Axiom*, u16> get_axiom(const Def* def) {
-    if (auto axiom = def->isa<Axiom>()) return {axiom, axiom->currying_depth()};
-    if (auto app = def->isa<App>()) return {app->axiom(), app->currying_depth()};
+    if (auto axiom = isa<Axiom>(def)) return {axiom, axiom->currying_depth()};
+    if (auto app = isa<App>(def)) return {app->axiom(), app->currying_depth()};
     return {0, u16(-1)};
 }
 
-bool is_memop(const Def* def) { return def->isa<App>() && isa<Tag::Mem>(def->out(0)->type()); }
+bool is_memop(const Def* def) { return isa<App>(def) && isa<Tag::Mem>(def->out(0)->type()); }
 
 }

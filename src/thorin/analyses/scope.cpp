@@ -68,7 +68,7 @@ void Scope::calc_free() const {
     auto enqueue = [&](const Def* def) {
         if (def->no_dep()) return;
 
-        if (auto var = def->isa<Var>())
+        if (auto var = isa<Var>(def))
             free_vars_.emplace(var);
         else if (auto nom = def->isa_nom())
             free_noms_.emplace(nom);
@@ -89,7 +89,7 @@ const CFA& Scope::cfa() const { return lazy_init(this, cfa_); }
 const F_CFG& Scope::f_cfg() const { return cfa().f_cfg(); }
 const B_CFG& Scope::b_cfg() const { return cfa().b_cfg(); }
 
-Stream& Scope::stream(Stream& s) const { return schedule(*this).stream(s); }
+Stream& Scope::stream(Stream& s) const { /*TODO*/ return s; }
 
 template void Streamable<Scope>::dump() const;
 template void Streamable<Scope>::write() const;

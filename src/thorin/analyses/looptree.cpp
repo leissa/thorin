@@ -128,7 +128,7 @@ void LoopTreeBuilder<forward>::recurse(Head* parent, ArrayRef<const CFNode*> hea
     }
 
     for (const auto& node : parent->children()) {
-        if (auto new_parent = node->template isa<Head>())
+        if (auto new_parent = isa<Head>(node))
             recurse(new_parent, new_parent->cf_nodes(), depth + 1);
     }
 }

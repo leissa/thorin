@@ -19,8 +19,8 @@ private:
 public:
     /// @name setters
     //@{
-    Sigma* set(size_t i, const Def* def) { return Def::set(i, def)->as<Sigma>(); }
-    Sigma* set(Defs ops) { return Def::set(ops)->as<Sigma>(); }
+    Sigma* set(size_t i, const Def* def) { return as<Sigma>(Def::set(i, def)); }
+    Sigma* set(Defs ops) { return as<Sigma>(Def::set(ops)); }
     //@}
     /// @name virtual methods
     //@{
@@ -70,7 +70,7 @@ public:
     //@}
     /// @name methods for noms
     //@{
-    Arr* set(const Def* body) { return Def::set(1, body)->as<Arr>(); }
+    Arr* set(const Def* body) { return as<Arr>(Def::set(1, body)); }
     //@}
     /// @name virtual methods
     //@{
@@ -93,7 +93,7 @@ public:
     /// @name getters
     //@{
     const Def* body() const { return op(0); }
-    const Arr* type() const { return Def::type()->as<Arr>(); }
+    const Arr* type() const { return as<Arr>(Def::type()); }
     const Def* shape() const { return type()->shape(); }
     //@}
     /// @name virtual methods
@@ -105,8 +105,8 @@ public:
     friend class World;
 };
 
-inline bool is_sigma_or_arr (const Def* def) { return def->isa<Sigma>() || def->isa<Arr >(); }
-inline bool is_tuple_or_pack(const Def* def) { return def->isa<Tuple>() || def->isa<Pack>(); }
+inline bool is_sigma_or_arr (const Def* def) { return isa<Sigma>(def) || isa<Arr >(def); }
+inline bool is_tuple_or_pack(const Def* def) { return isa<Tuple>(def) || isa<Pack>(def); }
 
 /// Extracts from a @p Sigma or @p Variadic typed @p Def the element at position @p index.
 class Extract : public Def {

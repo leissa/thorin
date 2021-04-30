@@ -36,9 +36,9 @@ public:
     //@}
     /// @name setters for @em nom @p Pi.
     //@{
-    Pi* set_dom(const Def* dom) { return Def::set(0, dom)->as<Pi>(); }
+    Pi* set_dom(const Def* dom) { return as<Pi>(Def::set(0, dom)); }
     Pi* set_dom(Defs doms);
-    Pi* set_codom(const Def* codom) { return Def::set(1, codom)->as<Pi>(); }
+    Pi* set_codom(const Def* codom) { return as<Pi>(Def::set(1, codom)); }
     //@}
     /// @name virtual methods
     //@{
@@ -70,7 +70,7 @@ private:
 public:
     /// @name type
     //@{
-    const Pi* type() const { return Def::type()->as<Pi>(); }
+    const Pi* type() const { return as<Pi>(Def::type()); }
     const Def* dom() const { return type()->dom(); }
     const Def* dom(size_t i) const { return type()->dom(i); }
     Array<const Def*> doms() const { return type()->doms(); }
@@ -89,8 +89,8 @@ public:
     //@}
     /// @name setters
     //@{
-    Lam* set(size_t i, const Def* def) { return Def::set(i, def)->as<Lam>(); }
-    Lam* set(Defs ops) { return Def::set(ops)->as<Lam>(); }
+    Lam* set(size_t i, const Def* def) { return as<Lam>(Def::set(i, def)); }
+    Lam* set(Defs ops) { return as<Lam>(Def::set(ops)); }
     Lam* set(const Def* filter, const Def* body) { return set({filter, body}); }
     Lam* set_filter(const Def* filter) { return set(0_s, filter); }
     Lam* set_filter(bool filter);
@@ -138,8 +138,8 @@ public:
     /// @name ops
     ///@{
     const Def* callee() const { return op(0); }
-    const App* decurry() const { return callee()->as<App>(); } ///< Returns the @p callee again as @p App.
-    const Pi* callee_type() const { return callee()->type()->as<Pi>(); }
+    const App* decurry() const { return as<App>(callee()); } ///< Returns the @p callee again as @p App.
+    const Pi* callee_type() const { return as<Pi>(callee()->type()); }
     const Def* arg() const { return op(1); }
     const Def* arg(size_t i, const Def* dbg = {}) const { return arg()->out(i, dbg); }
     Array<const Def*> args() const { return arg()->outs(); }
@@ -184,11 +184,6 @@ private:
     const Def* def_;
     Lam* from_;
 };
-
-// TODO remove - deprecated
-size_t get_var_index(const Def* def);
-Lam* get_var_lam(const Def* def);
-std::vector<Peek> peek(const Def*);
 
 inline bool ignore(Lam* lam) { return lam == nullptr || lam->is_external() || !lam->is_set(); }
 

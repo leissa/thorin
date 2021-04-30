@@ -3,7 +3,7 @@
 namespace thorin {
 
 const Def* CopyProp::rewrite(const Def* def) {
-    auto app = def->isa<App>();
+    auto app = isa<App>(def);
     if (app == nullptr) return def;
 
     auto var_lam = app->callee()->isa_nom<Lam>();

@@ -5,7 +5,7 @@
 namespace thorin {
 
 const Def* BetaRed::rewrite(const Def* def) {
-    if (auto app = def->isa<App>()) {
+    if (auto app = isa<App>(def)) {
         if (auto lam = app->callee()->isa_nom<Lam>(); !ignore(lam) && !keep_.contains(lam)) {
             if (auto [_, ins] = put(lam); ins) {
                 world().DLOG("beta-reduction {}", lam);

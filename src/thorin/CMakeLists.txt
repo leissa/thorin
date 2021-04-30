@@ -37,8 +37,6 @@ set(THORIN_SOURCES
     analyses/schedule.h
     analyses/scope.cpp
     analyses/scope.h
-    be/c.cpp
-    be/c.h
     pass/optimize.cpp
     pass/optimize.h
     pass/pass.cpp
@@ -75,36 +73,4 @@ set(THORIN_SOURCES
     util/utility.h
 )
 
-if(LLVM_FOUND)
-    list(APPEND THORIN_SOURCES
-        be/llvm/cpu.cpp
-        be/llvm/cpu.h
-        be/llvm/cuda.cpp
-        be/llvm/cuda.h
-        be/llvm/hls.cpp
-        be/llvm/hls.h
-        be/llvm/llvm.cpp
-        be/llvm/llvm.h
-        be/llvm/amdgpu.cpp
-        be/llvm/amdgpu.h
-        be/llvm/nvvm.cpp
-        be/llvm/nvvm.h
-        be/llvm/opencl.cpp
-        be/llvm/opencl.h
-        be/llvm/parallel.cpp
-        be/llvm/runtime.inc
-        be/llvm/runtime.cpp
-        be/llvm/runtime.h
-        be/llvm/vectorize.cpp
-    )
-endif()
-
 add_library(thorin ${THORIN_SOURCES})
-
-if(LLVM_FOUND)
-    llvm_map_components_to_libnames(LLVM_LIBRARIES all)
-    target_link_libraries(thorin ${LLVM_LIBRARIES})
-endif()
-if(RV_FOUND)
-    target_link_libraries(thorin ${RV_LIBRARIES})
-endif()

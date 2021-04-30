@@ -287,10 +287,10 @@ public:
     const App* type_i_width(nat_t width) { return type_i(lit_nat(width2mod(width))); }
     const App* type_i  (nat_t   mod) { return type_i (lit_nat(  mod)); }
     const App* type_f(nat_t width) { return type_f(lit_nat(width)); }
-    const App* type_i (const Def* mod) { return app(type_i(),  mod)->as<App>(); }
-    const App* type_f(const Def* width) { return app(type_f(), width)->as<App>(); }
+    const App* type_i (const Def* mod) { return as<App>(app(type_i(),  mod)); }
+    const App* type_f(const Def* width) { return as<App>(app(type_f(), width)); }
     const App* type_ptr(const Def* pointee, nat_t addr_space = AddrSpace::Generic, const Def* dbg = {}) { return type_ptr(pointee, lit_nat(addr_space), dbg); }
-    const App* type_ptr(const Def* pointee, const Def* addr_space, const Def* dbg = {}) { return app(type_ptr(), {pointee, addr_space}, dbg)->as<App>(); }
+    const App* type_ptr(const Def* pointee, const Def* addr_space, const Def* dbg = {}) { return as<App>(app(type_ptr(), {pointee, addr_space}, dbg)); }
     //@}
 
     /// @name bulitin axioms
@@ -342,7 +342,7 @@ public:
     const Def* op(Shr   o,                   const Def* a, const Def* b, const Def* dbg = {}) { return app(fn(o,        infer(a)),      {a, b}, dbg); }
     const Def* op(Wrap  o, const Def* wmode, const Def* a, const Def* b, const Def* dbg = {}) { return app(fn(o, wmode, infer(a)),      {a, b}, dbg); }
     template<class O> const Def* op(O  o, nat_t mode, const Def* a, const Def* b, const Def* dbg = {}) { return op(o, lit_nat(mode), a, b, dbg); }
-    const Def* op(Conv  o, const Def* dst_type, const Def* src, const Def* dbg = {}) { auto d = dst_type->as<App>()->arg(); auto s = src->type()->as<App>()->arg(); return app(fn(o, d, s), src, dbg); }
+    const Def* op(Conv  o, const Def* dst_type, const Def* src, const Def* dbg = {}) { auto d = as<App>(dst_type)->arg(); auto s = as<App>(src->type())->arg(); return app(fn(o, d, s), src, dbg); }
     const Def* op(Trait o, const Def* type, const Def* dbg = {}) { return app(ax(o), type, dbg); }
     const Def* op(PE    o, const Def* def, const Def* dbg = {}) { return app(app(ax(o), def->type()), def, dbg); }
     const Def* op(Acc   o, const Def* a, const Def* b, const Def* body, const Def* dbg = {}) { return app(ax(o), {a, b, body}, dbg); }

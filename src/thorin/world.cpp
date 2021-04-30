@@ -34,8 +34,8 @@ World::World(const std::string& name)
     data_.space_    = insert<Space>(0, *this);
     data_.kind_     = insert<Kind>(0, *this);
     data_.bot_kind_ = insert<Bot>(0, kind(), nullptr);
-    data_.sigma_    = insert<Sigma>(0, kind(), Defs{}, nullptr)->as<Sigma>();
-    data_.tuple_    = insert<Tuple>(0, sigma(), Defs{}, nullptr)->as<Tuple>();
+    data_.sigma_    = as<Sigma>(insert<Sigma>(0,  kind(), Defs{}, nullptr));
+    data_.tuple_    = as<Tuple>(insert<Tuple>(0, sigma(), Defs{}, nullptr));
     data_.type_nat_ = insert<Nat>(0, *this);
     data_.top_nat_  = insert<Top>(0, type_nat(), nullptr);
     data_.lit_nat_0_   = lit_nat(0);
@@ -246,7 +246,7 @@ const Lam* World::lam(const Def* dom, const Def* filter, const Def* body, const 
 }
 
 const Def* World::app(const Def* callee, const Def* arg, const Def* dbg) {
-    auto pi = callee->type()->as<Pi>();
+    auto pi = as<Pi>(callee->type());
 
     if (err()) {
         if (!checker_->assignable(pi->dom(), arg))
@@ -264,7 +264,7 @@ const Def* World::app(const Def* callee, const Def* arg, const Def* dbg) {
 }
 
 const Def* World::raw_app(const Def* callee, const Def* arg, const Def* dbg) {
-    auto pi = callee->type()->as<Pi>();
+    auto pi = as<Pi>(callee->type());
     auto type = pi->apply(arg).back();
     auto [axiom, currying_depth] = get_axiom(callee);
     return unify<App>(2, axiom, currying_depth-1, type, callee, arg, dbg);
@@ -310,11 +310,11 @@ const Def* World::tuple(const Def* type, Defs ops, const Def* dbg) {
 
     // eta rule for tuples:
     // (extract(tup, 0), extract(tup, 1), extract(tup, 2)) -> tup
-    if (n != 0) if (auto extract = ops[0]->isa<Extract>()) {
+    if (n != 0) if (auto extract = isa<Extract>(ops[0])) {
         auto tup = extract->tuple();
         bool eta = tup->type() == type;
         for (size_t i = 0; i != n && eta; ++i) {
-            if (auto extract = ops[i]->isa<Extract>()) {
+            if (auto extract = isa<Extract>(ops[i])) {
                 if (auto index = isa_lit(extract->index())) {
                     if (eta &= u64(i) == *index) {
                         eta &= extract->tuple() == tup;
@@ -339,14 +339,14 @@ const Def* World::tuple_str(const char* s, const Def* dbg) {
 }
 
 const Def* World::extract_(const Def* ex_type, const Def* tup, const Def* index, const Def* dbg) {
-    if (index->isa<Arr>() || index->isa<Pack>()) {
+    if (isa<Arr>(index) || isa<Pack>(index)) {
         Array<const Def*> ops(as_lit(index->arity()), [&](size_t) { return extract(tup, index->ops().back()); });
-        return index->isa<Arr>() ? sigma(ops, dbg) : tuple(ops, dbg);
-    } else if (index->isa<Sigma>() || index->isa<Tuple>()) {
+        return isa<Arr>(index) ? sigma(ops, dbg) : tuple(ops, dbg);
+    } else if (isa<Sigma>(index) || isa<Tuple>(index)) {
         auto n = index->num_ops();
         Array<const Def*> idx(n, [&](size_t i) { return index->op(i); });
         Array<const Def*> ops(n, [&](size_t i) { return proj(tup, n, as_lit(idx[i])); });
-        return index->isa<Sigma>() ? sigma(ops, dbg) : tuple(ops, dbg);
+        return isa<Sigma>(index) ? sigma(ops, dbg) : tuple(ops, dbg);
     }
 
     auto type = tup->type()->reduce();
@@ -360,25 +360,25 @@ const Def* World::extract_(const Def* ex_type, const Def* tup, const Def* index,
     if (auto pack = tup->isa_structural<Pack>()) return pack->body();
 
     // extract(insert(x, index, val), index) -> val
-    if (auto insert = tup->isa<Insert>()) {
+    if (auto insert = isa<Insert>(tup)) {
         if (index == insert->index())
             return insert->value();
     }
 
     if (auto i = isa_lit(index)) {
-        if (auto tuple = tup->isa<Tuple>()) return tuple->op(*i);
+        if (auto tuple = isa<Tuple>(tup)) return tuple->op(*i);
 
         // extract(insert(x, j, val), i) -> extract(x, i) where i != j (guaranteed by rule above)
-        if (auto insert = tup->isa<Insert>()) {
-            if (insert->index()->isa<Lit>())
+        if (auto insert = isa<Insert>(tup)) {
+            if (isa<Lit>(insert->index()))
                 return extract(insert->tuple(), index, dbg);
         }
 
-        if (type->isa<Sigma>())
+        if (isa<Sigma>(type))
             return unify<Extract>(2, ex_type ? ex_type : type->op(*i), tup, index, dbg);
     }
 
-    type = type->as<Arr>()->body();
+    type = as<Arr>(type)->body();
     return unify<Extract>(2, type, tup, index, dbg);
 }
 
@@ -392,10 +392,10 @@ const Def* World::insert(const Def* tup, const Def* index, const Def* val, const
         return tuple(tup, {val}, dbg); // tup could be nom - that's why the tuple ctor is needed
 
     // insert((a, b, c, d), 2, x) -> (a, b, x, d)
-    if (auto t = tup->isa<Tuple>()) return t->refine(as_lit(index), val);
+    if (auto t = isa<Tuple>(tup)) return t->refine(as_lit(index), val);
 
     // insert(‹4; x›, 2, y) -> (x, x, y, x)
-    if (auto pack = tup->isa<Pack>()) {
+    if (auto pack = isa<Pack>(tup)) {
         if (auto a = isa_lit(pack->arity())) {
             Array<const Def*> new_ops(*a, pack->body());
             new_ops[as_lit(index)] = val;
@@ -404,7 +404,7 @@ const Def* World::insert(const Def* tup, const Def* index, const Def* val, const
     }
 
     // insert(insert(x, index, y), index, val) -> insert(x, index, val)
-    if (auto insert = tup->isa<Insert>()) {
+    if (auto insert = isa<Insert>(tup)) {
         if (insert->index() == index)
             tup = insert->tuple();
     }
@@ -413,10 +413,10 @@ const Def* World::insert(const Def* tup, const Def* index, const Def* val, const
 }
 
 bool is_shape(const Def* s) {
-    if (s->isa<Nat>()) return true;
-    if (auto arr = s->isa<Arr  >()) return arr->body()->isa<Nat>();
+    if (isa<Nat>(s)) return true;
+    if (auto arr = isa<Arr  >(s)) return isa<Nat>(arr->body());
     if (auto sig = s->isa_structural<Sigma>())
-        return std::all_of(sig->ops().begin(), sig->ops().end(), [&](const Def* op) { return op->isa<Nat>(); });
+        return std::all_of(sig->ops().begin(), sig->ops().end(), [&](const Def* op) { return isa<Nat>(op); });
 
     return false;
 }
@@ -432,11 +432,11 @@ const Def* World::arr(const Def* shape, const Def* body, const Def* dbg) {
     }
 
     // «(a, b, c); body» -> «a; «(b, c); body»»
-    if (auto tuple = shape->isa<Tuple>())
+    if (auto tuple = isa<Tuple>(shape))
         return arr(tuple->ops().front(), arr(tuple->ops().skip_front(), body), dbg);
 
     // «<n; x>; body» -> «x; «<n-1, x>; body»»
-    if (auto p = shape->isa<Pack>()) {
+    if (auto p = isa<Pack>(shape)) {
         if (auto s = isa_lit(p->shape()))
             return arr(*s, arr(pack(*s-1, p->body()), body), dbg);
     }
@@ -455,11 +455,11 @@ const Def* World::pack(const Def* shape, const Def* body, const Def* dbg) {
     }
 
     // <(a, b, c); body> -> <a; «(b, c); body>>
-    if (auto tuple = shape->isa<Tuple>())
+    if (auto tuple = isa<Tuple>(shape))
         return pack(tuple->ops().front(), pack(tuple->ops().skip_front(), body), dbg);
 
     // <<n; x>; body> -> <x; <<n-1, x>; body>>
-    if (auto p = shape->isa<Pack>()) {
+    if (auto p = isa<Pack>(shape)) {
         if (auto s = isa_lit(p->shape()))
             return pack(*s, pack(pack(*s-1, p->body()), body), dbg);
     }
@@ -480,7 +480,7 @@ const Def* World::pack(Defs shape, const Def* body, const Def* dbg) {
 
 const Lit* World::lit_i(const Def* type, u64 i, const Def* dbg) {
     auto size = isa_sized_type(type);
-    if (size->isa<Top>()) return lit(size, i, dbg);
+    if (isa<Top>(size)) return lit(size, i, dbg);
 
     auto l = lit(type, i, dbg);
 
@@ -512,8 +512,8 @@ const Def* World::global_immutable_string(const std::string& str, const Def* dbg
 
 template<bool up>
 const Def* World::ext(const Def* type, const Def* dbg) {
-    if (auto arr = type->isa<Arr>()) return pack(arr->shape(), ext<up>(arr->body()), dbg);
-    if (auto sigma = type->isa<Sigma>())
+    if (auto arr = isa<Arr>(type)) return pack(arr->shape(), ext<up>(arr->body()), dbg);
+    if (auto sigma = isa<Sigma>(type))
         return tuple(sigma, Array<const Def*>(sigma->num_ops(), [&](size_t i) { return ext<up>(sigma->op(i), dbg); }), dbg);
     return unify<TExt<up>>(0, type, dbg);
 }
@@ -523,7 +523,7 @@ const Def* World::bound(Defs ops, const Def* dbg) {
     auto kind = infer_kind(ops);
 
     // has ext<up> value?
-    if (std::any_of(ops.begin(), ops.end(), [&](const Def* op) { return up ? bool(op->isa<Top>()) : bool(op->isa<Bot>()); }))
+    if (std::any_of(ops.begin(), ops.end(), [&](const Def* op) { return up ? bool(isa<Top>(op)) : bool(isa<Bot>(op)); }))
         return ext<up>(kind);
 
     // ignore: ext<!up>
@@ -544,7 +544,7 @@ const Def* World::bound(Defs ops, const Def* dbg) {
 }
 
 const Def* World::et(const Def* type, Defs ops, const Def* dbg) {
-    if (type->isa<Meet>()) {
+    if (isa<Meet>(type)) {
         Array<const Def*> types(ops.size(), [&](size_t i) { return ops[i]->type(); });
         return unify<Et>(ops.size(), meet(types), ops, dbg);
     }
@@ -554,7 +554,7 @@ const Def* World::et(const Def* type, Defs ops, const Def* dbg) {
 }
 
 const Def* World::vel(const Def* type, const Def* value, const Def* dbg) {
-    if (type->isa<Join>()) return unify<Vel>(1, type, value, dbg);
+    if (isa<Join>(type)) return unify<Vel>(1, type, value, dbg);
     return value;
 }
 
@@ -563,8 +563,8 @@ const Def* World::pick(const Def* type, const Def* value, const Def* dbg) {
 }
 
 const Def* World::test(const Def* value, const Def* probe, const Def* match, const Def* clash, const Def* dbg) {
-    auto m_pi = match->type()->isa<Pi>();
-    auto c_pi = clash->type()->isa<Pi>();
+    auto m_pi = isa<Pi>(match->type());
+    auto c_pi = isa<Pi>(clash->type());
 
     if (err()) {
         // TODO proper error msg
@@ -584,8 +584,8 @@ const Def* World::test(const Def* value, const Def* probe, const Def* match, con
 
 static const Def* tuple_of_types(const Def* t) {
     auto& world = t->world();
-    if (auto sigma = t->isa<Sigma>()) return world.tuple(sigma->ops());
-    if (auto arr   = t->isa<Arr  >()) return world.pack(arr->shape(), arr->body());
+    if (auto sigma = isa<Sigma>(t)) return world.tuple(sigma->ops());
+    if (auto arr   = isa<Arr  >(t)) return world.pack(arr->shape(), arr->body());
     return t;
 }
 
@@ -627,9 +627,9 @@ const Def* World::gid2def(u32 gid) {
 
 const Def* World::op_grad(const Def* /*fn*/, const Def* /*dbg*/) {
 #if 0
-    if (fn->type()->isa<Pi>()) {
+    if isa<Pi>((fn->type())) {
         auto ds_fn = cps2ds(fn);
-        auto ds_pi = ds_fn->type()->as<Pi>();
+        auto ds_pi = as<Pi>(ds_fn->type());
         auto to_grad = app(data_.op_grad_, {ds_pi->dom(), ds_pi->codom()}, dbg);
         auto grad = app(to_grad, ds_fn, dbg);
         return ds2cps(grad);
@@ -660,7 +660,7 @@ const Def* World::dbg(Debug d) {
 
 const Def* World::infer_kind(Defs defs) const {
     for (auto def : defs) {
-        if (def->type()->isa<Space>()) return def;
+        if (isa<Space>(def->type())) return def;
     }
     return kind();
 }

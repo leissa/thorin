@@ -77,14 +77,14 @@ const Def* Extract::rebuild(World& w, const Def* t, Defs o, const Def* dbg) cons
 const Def* Global ::rebuild(World& w, const Def*  , Defs o, const Def* dbg) const { return w.global(o[0], o[1], is_mutable(), dbg); }
 const Def* Insert ::rebuild(World& w, const Def*  , Defs o, const Def* dbg) const { return w.insert(o[0], o[1], o[2], dbg); }
 const Def* Kind   ::rebuild(World& w, const Def*  , Defs  , const Def*    ) const { return w.kind(); }
-const Def* Lam    ::rebuild(World& w, const Def* t, Defs o, const Def* dbg) const { return w.lam(t->as<Pi>(), o[0], o[1], dbg); }
+const Def* Lam    ::rebuild(World& w, const Def* t, Defs o, const Def* dbg) const { return w.lam(as<Pi>(t), o[0], o[1], dbg); }
 const Def* Lit    ::rebuild(World& w, const Def* t, Defs  , const Def* dbg) const { return w.lit(t, get(), dbg); }
 const Def* Nat    ::rebuild(World& w, const Def*  , Defs  , const Def*    ) const { return w.type_nat(); }
 const Def* Pack   ::rebuild(World& w, const Def* t, Defs o, const Def* dbg) const { return w.pack(t->arity(), o[0], dbg); }
-const Def* Var  ::rebuild(World& w, const Def* t, Defs o, const Def* dbg) const { return w.var(t, o[0]->as_nom(), dbg); }
+const Def* Var    ::rebuild(World& w, const Def* t, Defs o, const Def* dbg) const { return w.var(t, o[0]->as_nom(), dbg); }
 const Def* Pi     ::rebuild(World& w, const Def*  , Defs o, const Def* dbg) const { return w.pi(o[0], o[1], dbg); }
 const Def* Pick   ::rebuild(World& w, const Def* t, Defs o, const Def* dbg) const { return w.pick(t, o[0], dbg); }
-const Def* Proxy  ::rebuild(World& w, const Def* t, Defs o, const Def* dbg) const { return w.proxy(t, o, as<Proxy>()->id(), as<Proxy>()->flags(), dbg); }
+const Def* Proxy  ::rebuild(World& w, const Def* t, Defs o, const Def* dbg) const { return w.proxy(t, o, id(), flags(), dbg); }
 const Def* Sigma  ::rebuild(World& w, const Def*  , Defs o, const Def* dbg) const { return w.sigma(o, dbg); }
 const Def* Space  ::rebuild(World& w, const Def*  , Defs  , const Def*    ) const { return w.space(); }
 const Def* Test   ::rebuild(World& w, const Def*  , Defs o, const Def* dbg) const { return w.test(o[0], o[1], o[2], o[3], dbg); }
@@ -97,7 +97,7 @@ template<bool up> const Def* TBound<up>::rebuild(World& w, const Def*  , Defs o,
  * stub
  */
 
-Lam*   Lam  ::stub(World& w, const Def* t, const Def* dbg) { return w.nom_lam  (t->as<Pi>(), cc(), dbg); }
+Lam*   Lam  ::stub(World& w, const Def* t, const Def* dbg) { return w.nom_lam  (as<Pi>(t), cc(), dbg); }
 Pi*    Pi   ::stub(World& w, const Def* t, const Def* dbg) { return w.nom_pi   (t, dbg); }
 Sigma* Sigma::stub(World& w, const Def* t, const Def* dbg) { return w.nom_sigma(t, num_ops(), dbg); }
 Arr*   Arr  ::stub(World& w, const Def* t, const Def* dbg) { return w.nom_arr  (t, shape(), dbg); }
@@ -134,7 +134,7 @@ THORIN_NODE(CODE)
 }
 
 Defs Def::extended_ops() const {
-    if (isa<Space>()) return Defs();
+    if (isa<Space>(this)) return Defs();
 
     size_t offset = dbg() ? 2 : 1;
     return Defs((is_set() ? num_ops_ : 0) + offset, ops_ptr() - offset);
@@ -142,11 +142,11 @@ Defs Def::extended_ops() const {
 
 const Var* Def::var(const Def* dbg) {
     auto& w = world();
-    if (auto lam    = isa<Lam  >()) return w.var(lam ->dom(), lam,   dbg);
-    if (auto pi     = isa<Pi   >()) return w.var(pi  ->dom(), pi,    dbg);
-    if (auto sigma  = isa<Sigma>()) return w.var(sigma,          sigma, dbg);
-    if (auto arr    = isa<Arr  >()) return w.var(w.type_i(arr ->shape()), arr,  dbg); // TODO shapes like (2, 3)
-    if (auto pack   = isa<Pack >()) return w.var(w.type_i(pack->shape()), pack, dbg); // TODO shapes like (2, 3)
+    if (auto lam    = isa<Lam  >(this)) return w.var(lam ->dom(), lam,   dbg);
+    if (auto pi     = isa<Pi   >(this)) return w.var(pi  ->dom(), pi,    dbg);
+    if (auto sigma  = isa<Sigma>(this)) return w.var(sigma,          sigma, dbg);
+    if (auto arr    = isa<Arr  >(this)) return w.var(w.type_i(arr ->shape()), arr,  dbg); // TODO shapes like (2, 3)
+    if (auto pack   = isa<Pack >(this)) return w.var(w.type_i(pack->shape()), pack, dbg); // TODO shapes like (2, 3)
     if (isa_bound(this)) return w.var(this, this,  dbg);
     THORIN_UNREACHABLE;
 }
@@ -156,9 +156,9 @@ const Def* Def::var(size_t i) { return var(i, nullptr); }
 size_t     Def::num_vars() { return var()->num_outs(); }
 
 Sort Def::level() const {
-    if (                isa<Space>()) return Sort::Space;
-    if (        type()->isa<Space>()) return Sort::Kind;
-    if (type()->type()->isa<Space>()) return Sort::Type;
+    if (isa<Space>(          this)) return Sort::Space;
+    if (isa<Space>(        type())) return Sort::Kind;
+    if (isa<Space>(type()->type())) return Sort::Type;
     return Sort::Term;
 }
 
@@ -183,14 +183,14 @@ Sort Def::sort() const {
 }
 
 const Def* Def::arity() const {
-    if (auto sigma  = isa<Sigma>()) return world().lit_nat(sigma ->num_ops());
-    if (auto arr    = isa<Arr  >()) return arr->shape();
-    if (sort() == Sort::Term)       return type()->arity();
+    if (auto sigma  = isa<Sigma>(this)) return world().lit_nat(sigma ->num_ops());
+    if (auto arr    = isa<Arr  >(this)) return arr->shape();
+    if (sort() == Sort::Term)           return type()->arity();
     return world().lit_nat(1);
 }
 
 bool Def::equal(const Def* other) const {
-    if (isa<Space>() || this->isa_nom() || other->isa_nom())
+    if (isa<Space>(this) || this->isa_nom() || other->isa_nom())
         return this == other;
 
     bool result = this->node() == other->node() && this->fields() == other->fields() && this->num_ops() == other->num_ops() && this->type() == other->type();
@@ -233,7 +233,7 @@ void Def::finalize() {
         order_ = std::max(order_, op(i)->order_);
     }
 
-    if (!isa<Space>()) {
+    if (!isa<Space>(this)) {
         if (auto dep = type()->dep(); dep != Dep::Bot) {
             dep_ |= dep;
             const auto& p = type()->uses_.emplace(this, -1);
@@ -242,8 +242,8 @@ void Def::finalize() {
     }
 
     assert(!dbg() || dbg()->no_dep());
-    if (isa<Pi>())  ++order_;
-    if (auto var = isa<Var>()) {
+    if (isa<Pi>(this))  ++order_;
+    if (auto var = isa<Var>(this)) {
         var->nom()->var_ = true;
         dep_ = Dep::Var;
     }
@@ -305,7 +305,7 @@ Array<const Def*> Def::apply(const Def* arg) {
 
 const Def* Def::reduce() const {
     auto def = this;
-    while (auto app = def->isa<App>()) {
+    while (auto app = isa<App>(def)) {
         auto callee = app->callee()->reduce();
         if (callee->isa_nom()) {
             def = callee->apply(app->arg()).back();

@@ -14,14 +14,14 @@ namespace thorin {
 
 Stream& stream(Stream& s, const Def* def) {
     if (false) {}
-    else if (def->isa<Space>()) return s.fmt("□");
-    else if (def->isa<Kind>())  return s.fmt("★");
-    else if (def->isa<Nat>())   return s.fmt("nat");
-    else if (auto bot = def->isa<Bot>()) return s.fmt("⊥∷{}", bot->type());
-    else if (auto top = def->isa<Top>()) return s.fmt("⊤∷{}", top->type());
-    else if (auto axiom = def->isa<Axiom>()) return s.fmt(":{}", axiom->debug().name);
-    else if (auto lit = def->isa<Lit>()) {
-        if (auto f = thorin::isa<Tag::F>(lit->type())) {
+    else if (isa<Space>(def)) return s.fmt("□");
+    else if (isa<Kind >(def)) return s.fmt("★");
+    else if (isa<Nat  >(def)) return s.fmt("nat");
+    else if (auto bot = isa<Bot>(def)) return s.fmt("⊥∷{}", bot->type());
+    else if (auto top = isa<Top>(def)) return s.fmt("⊤∷{}", top->type());
+    else if (auto axiom = isa<Axiom>(def)) return s.fmt(":{}", axiom->debug().name);
+    else if (auto lit = isa<Lit>(def)) {
+        if (auto f = isa<Tag::F>(lit->type())) {
             switch (as_lit(f->arg())) {
                 case 16: return s.fmt("{}∷r16", lit->get<f16>());
                 case 32: return s.fmt("{}∷r32", lit->get<f32>());
@@ -31,18 +31,18 @@ Stream& stream(Stream& s, const Def* def) {
         }
 
         return s.fmt("{}∷{}", lit->get(), lit->type());
-    } else if (auto pi = def->isa<Pi>()) {
+    } else if (auto pi = isa<Pi>(def)) {
         if (pi->is_cn()) {
             return s.fmt("cn {}", pi->dom());
         } else {
             return s.fmt("{} -> {}", pi->dom(), pi->codom());
         }
-    } else if (auto lam = def->isa<Lam>()) {
+    } else if (auto lam = isa<Lam>(def)) {
         return s.fmt("λ@({}) {}", lam->filter(), lam->body());
-    } else if (auto app = def->isa<App>()) {
+    } else if (auto app = isa<App>(def)) {
         if (auto size = isa_lit(isa_sized_type(app))) {
-            if (auto f = thorin::isa<Tag::F>(app)) return s.fmt("r{}", *size);
-            if (auto i = thorin::isa<Tag::I>(app)) {
+            if (auto f = isa<Tag::F>(app)) return s.fmt("r{}", *size);
+            if (auto i = isa<Tag::I>(app)) {
                 if (auto width = mod2width(*size)) return s.fmt("i{}", *width);
 
                 // append utf-8 subscripts in reverse order
@@ -54,26 +54,26 @@ Stream& stream(Stream& s, const Def* def) {
                 return s.fmt("i{}", str);
             }
             THORIN_UNREACHABLE;
-        } else if (auto ptr = thorin::isa<Tag::Ptr>(app)) {
+        } else if (auto ptr = isa<Tag::Ptr>(app)) {
             auto [pointee, addr_space] = ptr->args<2>();
             if (auto as = isa_lit(addr_space); as && *as == 0)
                 return s.fmt("{}*", (const Def*) pointee); // TODO why the cast???
         }
 
         return s.fmt("{} {}", app->callee(), app->arg());
-    } else if (auto sigma = def->isa<Sigma>()) {
+    } else if (auto sigma = isa<Sigma>(def)) {
         return s.fmt("[{, }]", sigma->ops());
-    } else if (auto tuple = def->isa<Tuple>()) {
+    } else if (auto tuple = isa<Tuple>(def)) {
         s.fmt("({, })", tuple->ops());
         return tuple->type()->isa_nom() ? s.fmt("∷{}", tuple->type()) : s;
-    } else if (auto arr = def->isa<Arr>()) {
+    } else if (auto arr = isa<Arr>(def)) {
         return s.fmt("«{}; {}»", arr->shape(), arr->body());
-    } else if (auto pack = def->isa<Pack>()) {
+    } else if (auto pack = isa<Pack>(def)) {
         return s.fmt("‹{}; {}›", pack->shape(), pack->body());
-    } else if (auto proxy = def->isa<Proxy>()) {
+    } else if (auto proxy = isa<Proxy>(def)) {
         return s.fmt(".proxy#{}#{} {, }", proxy->id(), proxy->flags(), proxy->ops());
     } else if (auto bound = isa_bound(def)) {
-        const char* op = bound->isa<Join>() ? "∪" : "∩";
+        const char* op = isa<Join>(bound) ? "∪" : "∩";
         if (def->isa_nom()) s.fmt("{}{}: {}", op, def->unique_name(), def->type());
         return s.fmt("{}({, })", op, def->ops());
     }
@@ -116,7 +116,7 @@ void RecStreamer::run(const Def* def) {
     }
 
     if (auto nom = def->isa_nom())
-        thorin::stream(s.endl().fmt("-> "), nom).fmt(";");
+        stream(s.endl().fmt("-> "), nom).fmt(";");
     else
         def->stream_assignment(s.endl());
 }

@@ -22,15 +22,14 @@ inline D bitcast(const S& src) {
     return dst;
 }
 
-/// Provides a @c dynamic_cast -like feature without resorting to RTTI.
-template<class Base>
-class RuntimeCast {
-public:
-    template<class T>       T* isa()       { return static_cast<      Base*>(this)->node() == T::Node ? static_cast<      T*>(this) : nullptr; } ///< Dynamic cast.
-    template<class T> const T* isa() const { return static_cast<const Base*>(this)->node() == T::Node ? static_cast<const T*>(this) : nullptr; } ///< Dynamic cast. @c const version.
-    template<class T>       T* as()       { assert(isa<T>()); return static_cast<      T*>(this); }                                              ///< Static cast with debug check.
-    template<class T> const T* as() const { assert(isa<T>()); return static_cast<const T*>(this); }                                              ///< Static cast with debug check. @c const version.
-};
+template<class D, class S>       D* isa(      S* s) { return s->node() == D::Node ? static_cast<      D*>(s) : nullptr; } ///< Dynamic cast.
+template<class D, class S> const D* isa(const S* s) { return s->node() == D::Node ? static_cast<const D*>(s) : nullptr; } ///< Dynamic cast. @c const version.
+template<class D, class S>       D* as (      S* s) { assert(isa<D>(s)); return static_cast<      D*>(s); }               ///< Static cast with debug check.
+template<class D, class S> const D* as (const S* s) { assert(isa<D>(s)); return static_cast<const D*>(s); }               ///< Static cast with debug check. @c const version.
+template<class D, class S>       D* isa(const std::unique_ptr<S      >& s) { return s->node() == D::Node ? static_cast<      D*>(s.get()) : nullptr; } ///< Dynamic cast.
+template<class D, class S> const D* isa(const std::unique_ptr<const S>& s) { return s->node() == D::Node ? static_cast<const D*>(s.get()) : nullptr; } ///< Dynamic cast. @c const version.
+template<class D, class S>       D* as (const std::unique_ptr<S      >& s) { assert(isa<D>(s)); return static_cast<      D*>(s.get()); }               ///< Static cast with debug check.
+template<class D, class S> const D* as (const std::unique_ptr<const S>& s) { assert(isa<D>(s)); return static_cast<const D*>(s.get()); }               ///< Static cast with debug check. @c const version.
 
 }
 

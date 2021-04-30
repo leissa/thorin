@@ -5,7 +5,7 @@
 namespace thorin {
 
 bool Checker::equiv(const Def* d1, const Def* d2) {
-    if (d1 == d2 || (!d1->is_set() && !d2->is_set()) || (d1->isa<Space>() && d2->isa<Space>())) return true;
+    if (d1 == d2 || (!d1->is_set() && !d2->is_set()) || (isa<Space>(d1) && isa<Space>(d2))) return true;
     if (d1->level() != d2->level()) return false;
 
     // normalize: always put smaller gid to the left
@@ -17,7 +17,7 @@ bool Checker::equiv(const Def* d1, const Def* d2) {
 
     if (!equiv(d1->type(), d2->type())) return false;
 
-    if (d1->isa<Top>() || d2->isa<Top>()) return equiv(d1->type(), d2->type());
+    if (isa<Top>(d1) || isa<Top>(d2)) return equiv(d1->type(), d2->type());
 
     if (is_sigma_or_arr(d1)) {
         if (!equiv(d1->arity(), d2->arity())) return false;
@@ -29,10 +29,10 @@ bool Checker::equiv(const Def* d1, const Def* d2) {
 
             return true;
         }
-    } else if (auto p1 = d1->isa<Var>()) {
+    } else if (auto p1 = isa<Var>(d1)) {
         // vars are equal if they appeared under the same binder
         for (auto [q1, q2] : vars_) {
-            if (p1 == q1) return d2->as<Var>() == q2;
+            if (p1 == q1) return as<Var>(d2) == q2;
         }
         return true;
     }
@@ -55,7 +55,7 @@ bool Checker::equiv(const Def* d1, const Def* d2) {
 bool Checker::assignable(const Def* type, const Def* val) {
     if (type == val->type()) return true;
 
-    if (auto sigma = type->isa<Sigma>()) {
+    if (auto sigma = isa<Sigma>(type)) {
         if (!equiv(type->arity(), val->type()->arity())) return false;
 
         auto red = sigma->apply(val);
@@ -64,7 +64,7 @@ bool Checker::assignable(const Def* type, const Def* val) {
         }
 
         return true;
-    } else if (auto arr = type->isa<Arr>()) {
+    } else if (auto arr = isa<Arr>(type)) {
         if (!equiv(type->arity(), val->type()->arity())) return false;
 
         if (auto a = isa_lit(arr->arity())) {;

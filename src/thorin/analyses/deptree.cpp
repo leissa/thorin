@@ -44,7 +44,7 @@ VarSet DepTree::run(Def* cur_nom, const Def* def) {
     if (auto nom  = def->isa_nom(); nom && cur_nom != nom) return run(nom);
 
     VarSet result;
-    if (auto var = def->isa<Var>()) {
+    if (auto var = isa<Var>(def)) {
         result.emplace(var);
     } else {
         for (auto op : def->extended_ops())
