@@ -123,19 +123,12 @@ public:
     template<> void        Streamable<T>::dump() const;                     \
     template<> std::string Streamable<T>::to_string() const;
 
-// TODO Maybe there is a nicer way to do this??? Probably, using C++20 requires ...
-// I just want to find out whether "x->stream(s)" or "x.stream(s)" are valid expressions.
-template<class T, class = void>  struct is_streamable_ptr                                                                               : std::false_type {};
-template<class T, class = void>  struct is_streamable_ref                                                                               : std::false_type {};
-template<class T>                struct is_streamable_ptr<T, std::void_t<decltype(std::declval<T>()->stream(std::declval<Stream&>()))>> : std::true_type  {};
-template<class T>                struct is_streamable_ref<T, std::void_t<decltype(std::declval<T>(). stream(std::declval<Stream&>()))>> : std::true_type  {};
-template<class T> static constexpr bool is_streamable_ptr_v = is_streamable_ptr<T>::value;
-template<class T> static constexpr bool is_streamable_ref_v = is_streamable_ref<T>::value;
+template<typename T> concept PtrStream = requires (T x) { x->stream(std::declval<Stream&>()); };
+template<typename T> concept RefStream = requires (T x) { x. stream(std::declval<Stream&>()); };
 
-template<class T> std::enable_if_t< is_streamable_ptr_v<T>, Stream&> operator<<(Stream& s, const T& x) { return x->stream(s); }
-template<class T> std::enable_if_t< is_streamable_ref_v<T>, Stream&> operator<<(Stream& s, const T& x) { return x .stream(s); }
-template<class T> std::enable_if_t<!is_streamable_ptr_v<T>
-                                && !is_streamable_ref_v<T>, Stream&> operator<<(Stream& s, const T& x) { s.ostream() << x; return s; } ///< Fallback uses @c std::ostream @c operator<<.
+template<class T> requires PtrStream<T> Stream& operator<<(Stream& s, const T& x) { return x->stream(s); }
+template<class T> requires RefStream<T> Stream& operator<<(Stream& s, const T& x) { return x .stream(s); }
+template<class T> Stream& operator<<(Stream& s, const T& x) { s.ostream() << x; return s; } ///< Fallback uses @c std::ostream @c operator<<.
 
 template<class T, class... Args>
 Stream& Stream::fmt(const char* s, T&& t, Args&&... args) {
