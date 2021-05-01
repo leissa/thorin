@@ -1,13 +1,14 @@
 #ifndef THORIN_UTIL_INDEXMAP_H
 #define THORIN_UTIL_INDEXMAP_H
 
+#include <ranges>
+
 #include "thorin/util/array.h"
-#include "thorin/util/iterator.h"
 
 namespace thorin {
 
 template<class Indexer, class Key, class Value>
-class IndexMap {
+class IndexMap : public std::ranges::view_base {
 private:
     template<class T>
     struct IsValidPred {
@@ -51,9 +52,9 @@ public:
     Value& array(size_t i) { return array_[i]; }
     const Value& array(size_t i) const { return array_[i]; }
 
-    typedef filter_iterator<typename Array<Value>::const_iterator, bool (*)(Value)> const_iterator;
-    const_iterator begin() const { return filter(array_.begin(), array_.end(), IsValidPred<Value>::is_valid); }
-    const_iterator end() const { return filter(array_.end(), array_.end(), IsValidPred<Value>::is_valid); }
+    using const_iterator = decltype(std::declval<std::ranges::filter_view<Array<Value>, bool (*)(Value)>>().begin());
+    constexpr const_iterator begin() const noexcept { return std::ranges::filter_view(array_, IsValidPred<Value>::is_valid).begin(); }
+    constexpr const_iterator end() const noexcept { return std::ranges::filter_view(array_, IsValidPred<Value>::is_valid).end(); }
 
     friend void swap(IndexMap& map1, IndexMap& map2) {
         using std::swap;

@@ -6,10 +6,9 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <ranges>
 #include <sstream>
 #include <string>
-
-#include "thorin/util/iterator.h"
 
 namespace thorin {
 
@@ -155,7 +154,7 @@ Stream& Stream::fmt(const char* s, T&& t, Args&&... args) {
                 while (*s != '\0' && *s != '}') spec.push_back(*s++);
                 assert(*s == '}' && "unmatched closing brace '}' in format string");
 
-                if constexpr (is_range_v<T>) {
+                if constexpr (std::ranges::range<T>) {
                     range(t, spec.c_str());
                 } else {
                     (*this) << t;

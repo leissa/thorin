@@ -169,7 +169,7 @@ undo_t SSAConstr::analyze(const Def* def) {
                 if (suc_lam->is_basicblock() && suc_lam != cur_lam) {
                     // TODO this is a bit scruffy - maybe we can do better
                     auto&& [cur_info, _, __] = insert<Lam2Info>(cur_lam);
-                    suc_info.writable.insert_range(range(cur_info.writable));
+                    suc_info.writable.insert_range(cur_info.writable);
                 }
 
                 if (!preds_n_.contains(suc_lam)) {

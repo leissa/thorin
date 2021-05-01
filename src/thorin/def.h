@@ -39,7 +39,7 @@ class Def;
 class Stream;
 class World;
 
-typedef ArrayRef<const Def*> Defs;
+using Defs = ArrayRef<const Def*>;
 
 //------------------------------------------------------------------------------
 
@@ -83,7 +83,7 @@ struct UseHash {
     static Use sentinel() { return Use((const Def*)(-1), u16(-1)); }
 };
 
-typedef HashSet<Use, UseHash> Uses;
+using Uses = HashSet<Use, UseHash>;
 
 enum class Sort { Term, Type, Kind, Space };
 
@@ -346,7 +346,6 @@ template<class To>
 using DefMap  = GIDMap<const Def*, To>;
 using DefSet  = GIDSet<const Def*>;
 using Def2Def = DefMap<const Def*>;
-
 using DefDef = std::tuple<const Def*, const Def*>;
 
 struct DefDefHash {

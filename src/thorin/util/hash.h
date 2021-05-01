@@ -11,6 +11,7 @@
 #include <memory>
 #include <optional>
 #include <type_traits>
+#include <ranges>
 #include <utility>
 
 #include "thorin/config.h"
@@ -27,21 +28,21 @@ void debug_hash();
 
 // port from https://en.wikipedia.org/wiki/MurmurHash
 
-inline hash_t murmur_32_scramble(hash_t k) {
+[[nodiscard]] inline hash_t murmur_32_scramble(hash_t k) {
     k *= 0xcc9e2d51;
     k = (k << 15) | (k >> 17);
     k *= 0x1b873593;
     return k;
 }
 
-inline hash_t murmur3(hash_t h, uint32_t key) {
+[[nodiscard]] inline hash_t murmur3(hash_t h, uint32_t key) {
     h ^= murmur_32_scramble(key);
     h = (h << 13) | (h >> 19);
     h = h * 5 + 0xe6546b64;
     return h;
 }
 
-inline hash_t murmur3(hash_t h, uint64_t key) {
+[[nodiscard]] inline hash_t murmur3(hash_t h, uint64_t key) {
     hash_t k = hash_t(key);
     h ^= murmur_32_scramble(k);
     h = (h << 13) | (h >> 19);
@@ -53,17 +54,17 @@ inline hash_t murmur3(hash_t h, uint64_t key) {
     return h;
 }
 
-inline hash_t murmur3_rest(hash_t h, uint8_t key) {
+[[nodiscard]] inline hash_t murmur3_rest(hash_t h, uint8_t key) {
     h ^= murmur_32_scramble(key);
     return h;
 }
 
-inline hash_t murmur3_rest(hash_t h, uint16_t key) {
+[[nodiscard]] inline hash_t murmur3_rest(hash_t h, uint16_t key) {
     h ^= murmur_32_scramble(key);
     return h;
 }
 
-inline hash_t murmur3_finalize(hash_t h, hash_t len) {
+[[nodiscard]] inline hash_t murmur3_finalize(hash_t h, hash_t len) {
     h ^= len;
 	h ^= h >> 16;
 	h *= 0x85ebca6b;
@@ -74,7 +75,7 @@ inline hash_t murmur3_finalize(hash_t h, hash_t len) {
 }
 
 /// use for a single value to hash
-inline hash_t murmur3(hash_t h) {
+[[nodiscard]] inline hash_t murmur3(hash_t h) {
     h ^= h >> 16;
     h *= 0x85ebca6b;
     h ^= h >> 13;
@@ -91,7 +92,7 @@ struct FNV1 {
 
 /// Returns a new hash by combining the hash @p seed with @p val.
 template<class T>
-hash_t hash_combine(hash_t seed, T v) {
+[[nodiscard]] hash_t hash_combine(hash_t seed, T v) {
     static_assert(std::is_signed<T>::value || std::is_unsigned<T>::value,
                   "please provide your own hash function");
 
@@ -106,23 +107,23 @@ hash_t hash_combine(hash_t seed, T v) {
 }
 
 template<class T>
-hash_t hash_combine(hash_t seed, T* val) { return hash_combine(seed, uintptr_t(val)); }
+[[nodiscard]] hash_t hash_combine(hash_t seed, T* val) { return hash_combine(seed, uintptr_t(val)); }
 
 template<class T, class... Args>
-hash_t hash_combine(hash_t seed, T val, Args&&... args) {
+[[nodiscard]] hash_t hash_combine(hash_t seed, T val, Args&&... args) {
     return hash_combine(hash_combine(seed, val), std::forward<Args>(args)...);
 }
 
 template<class T>
-hash_t hash_begin(T val) { return hash_combine(FNV1::offset, val); }
-inline hash_t hash_begin() { return FNV1::offset; }
+[[nodiscard]] hash_t hash_begin(T val) { return hash_combine(FNV1::offset, val); }
+[[nodiscard]] inline hash_t hash_begin() { return FNV1::offset; }
 
-hash_t hash(const char* s);
+[[nodiscard]] hash_t hash(const char* s);
 
 struct StrHash {
-    static hash_t hash(const char* s) { return thorin::hash(s); }
-    static bool eq(const char* s1, const char* s2) { return std::strcmp(s1, s2) == 0; }
-    static const char* sentinel() { return (const char*)(1); }
+    [[nodiscard]] static hash_t hash(const char* s) { return thorin::hash(s); }
+    [[nodiscard]] static bool eq(const char* s1, const char* s2) { return std::strcmp(s1, s2) == 0; }
+    [[nodiscard]] static const char* sentinel() { return (const char*)(1); }
 };
 
 //------------------------------------------------------------------------------
@@ -131,7 +132,7 @@ namespace detail {
 
 /// Used internally for @p HashSet and @p HashMap.
 template<class Key, class T, class H, size_t StackCapacity>
-class HashTable {
+class HashTable : public std::ranges::view_base {
 public:
     enum { MinHeapCapacity = StackCapacity*4 };
     typedef Key key_type;
@@ -153,25 +154,26 @@ public:
     template<bool is_const>
     class iterator_base {
     public:
-        typedef typename HashTable<Key, T, H, StackCapacity>::value_type value_type;
-        typedef std::ptrdiff_t difference_type;
-        typedef typename std::conditional<is_const, const value_type&, value_type&>::type reference;
-        typedef typename std::conditional<is_const, const value_type*, value_type*>::type pointer;
-        typedef std::forward_iterator_tag iterator_category;
+        using iterator_category = std::forward_iterator_tag;
+        using difference_type   = std::ptrdiff_t;
+        using value_type        = typename HashTable<Key, T, H, StackCapacity>::value_type;
+        using pointer           = typename std::conditional<is_const, const value_type*, value_type*>::type;
+        using reference         = typename std::conditional<is_const, const value_type&, value_type&>::type;
 
+        iterator_base() = default;
+        iterator_base(const iterator_base&) = default;
+        iterator_base(const iterator_base<false>& i) requires (is_const)
+            : ptr_(i.ptr_)
+            , table_(i.table_)
+#if THORIN_ENABLE_CHECKS
+            , id_(i.id_)
+#endif
+        {}
         iterator_base(value_type* ptr, const HashTable* table)
             : ptr_(ptr)
             , table_(table)
 #if THORIN_ENABLE_CHECKS
             , id_(table->id_)
-#endif
-        {}
-
-        iterator_base(const iterator_base<false>& i)
-            : ptr_(i.ptr_)
-            , table_(i.table_)
-#if THORIN_ENABLE_CHECKS
-            , id_(i.id_)
 #endif
         {}
 
@@ -192,8 +194,18 @@ public:
         iterator_base operator++(int) { verify(); iterator_base res = *this; ++(*this); return res; }
         reference operator*() const { verify(); return *ptr_; }
         pointer operator->() const { verify(); return ptr_; }
-        bool operator==(const iterator_base& other) { verify(other); return this->ptr_ == other.ptr_; }
-        bool operator!=(const iterator_base& other) { verify(other); return this->ptr_ != other.ptr_; }
+        [[nodiscard]] bool operator==(const iterator_base& other) const { verify(other); return this->ptr_ == other.ptr_; }
+        [[nodiscard]] bool operator!=(const iterator_base& other) const { verify(other); return this->ptr_ != other.ptr_; }
+
+        friend void swap(iterator_base<is_const>& i, iterator_base<is_const>& j) {
+            using std::swap;
+
+            swap(i.ptr_,   j.ptr_  );
+            swap(i.table_, j.table_);
+#if THORIN_ENABLE_CHECKS
+            swap(i.id_,    j.id_   );
+#endif
+        }
 
     private:
         static iterator_base skip(value_type* ptr, const HashTable* table) {
@@ -210,9 +222,9 @@ public:
         friend class HashTable;
     };
 
-    typedef std::size_t size_type;
-    typedef iterator_base<false> iterator;
-    typedef iterator_base<true> const_iterator;
+    using size_type      = std::size_t;
+    using iterator       = iterator_base<false>;
+    using const_iterator = iterator_base<true>;
 
     HashTable()
         : capacity_(StackCapacity)
@@ -272,21 +284,21 @@ public:
     }
 
     //@{ getters
-    size_t capacity() const { return capacity_; }
-    size_t size() const { return size_; }
-    bool empty() const { return size() == 0; }
+    [[nodiscard]] size_t capacity() const noexcept { return capacity_; }
+    [[nodiscard]] size_t size() const noexcept { return size_; }
+    [[nodiscard]] bool empty() const noexcept { return size() == 0; }
 #if THORIN_ENABLE_CHECKS
-    int id() const { return id_; }
+    [[nodiscard]] int id() const noexcept { return id_; }
 #endif
     //@}
 
     //@{ get begin/end iterators
-    iterator begin() { return iterator::skip(nodes_, this); }
-    iterator end() { return iterator(end_ptr(), this); }
-    const_iterator begin() const { return const_iterator(const_cast<HashTable*>(this)->begin()); }
-    const_iterator end() const { return const_iterator(const_cast<HashTable*>(this)->end()); }
-    const_iterator cbegin() const { return begin(); }
-    const_iterator cend() const { return end(); }
+    constexpr iterator begin() noexcept { return iterator::skip(nodes_, this); }
+    constexpr iterator end() noexcept { return iterator(end_ptr(), this); }
+    constexpr const_iterator begin() const noexcept { return const_iterator(const_cast<HashTable*>(this)->begin()); }
+    constexpr const_iterator end() const noexcept { return const_iterator(const_cast<HashTable*>(this)->end()); }
+    constexpr const_iterator cbegin() const noexcept { return begin(); }
+    constexpr const_iterator cend() const noexcept { return end(); }
     //@}
 
     //@{ emplace/insert
@@ -526,12 +538,12 @@ private:
 #else
     void debug(size_t) {}
 #endif
-    hash_t hash(size_t i) { return H::hash(key(&nodes_[i])); } ///< just for debugging
-    size_t mod(size_t i) const { return i & (capacity_-1); }
-    size_t desired_pos(const key_type& key) const { return mod(H::hash(key)); }
-    size_t probe_distance(size_t i) { return mod(i + capacity() - desired_pos(key(nodes_+i))); }
-    value_type* end_ptr() const { return nodes_ + capacity(); }
-    bool on_heap() const { return capacity_ != StackCapacity; }
+    [[nodiscard]] hash_t hash(size_t i) { return H::hash(key(&nodes_[i])); } ///< just for debugging
+    [[nodiscard]] size_t mod(size_t i) const { return i & (capacity_-1); }
+    [[nodiscard]] size_t desired_pos(const key_type& key) const { return mod(H::hash(key)); }
+    [[nodiscard]] size_t probe_distance(size_t i) { return mod(i + capacity() - desired_pos(key(nodes_+i))); }
+    [[nodiscard]] value_type* end_ptr() const { return nodes_ + capacity(); }
+    [[nodiscard]] bool on_heap() const { return capacity_ != StackCapacity; }
 
     //@{ array set
     iterator array_find(const key_type& k) {
@@ -602,13 +614,13 @@ private:
 template<class Key, class H = typename Key::Hash, size_t StackCapacity = 4>
 class HashSet : public detail::HashTable<Key, void, H, StackCapacity> {
 public:
-    typedef detail::HashTable<Key, void, H, StackCapacity> Super;
-    typedef typename Super::key_type key_type;
-    typedef typename Super::mapped_type mapped_type;
-    typedef typename Super::value_type value_type;
-    typedef typename Super::size_type size_type;
-    typedef typename Super::iterator iterator;
-    typedef typename Super::const_iterator const_iterator;
+    using Super          = detail::HashTable<Key, void, H, StackCapacity>;
+    using key_type       = typename Super::key_type;
+    using mapped_type    = typename Super::mapped_type;
+    using value_type     = typename Super::value_type;
+    using size_type      = typename Super::size_type;
+    using iterator       = typename Super::iterator;
+    using const_iterator = typename Super::const_iterator;
 
     HashSet() {}
     HashSet(size_t capacity)
@@ -634,13 +646,13 @@ public:
 template<class Key, class T, class H = typename Key::Hash, size_t StackCapacity = 4>
 class HashMap : public detail::HashTable<Key, T, H, StackCapacity> {
 public:
-    typedef detail::HashTable<Key, T, H, StackCapacity> Super;
-    typedef typename Super::key_type key_type;
-    typedef typename Super::mapped_type mapped_type;
-    typedef typename Super::value_type value_type;
-    typedef typename Super::size_type size_type;
-    typedef typename Super::iterator iterator;
-    typedef typename Super::const_iterator const_iterator;
+    using Super          = detail::HashTable<Key, T, H, StackCapacity>;
+    using key_type       = typename Super::key_type;
+    using mapped_type    = typename Super::mapped_type;
+    using value_type     = typename Super::value_type;
+    using size_type      = typename Super::size_type;
+    using iterator       = typename Super::iterator;
+    using const_iterator = typename Super::const_iterator;
 
     HashMap()
         : Super()
@@ -666,6 +678,9 @@ public:
 
     friend void swap(HashMap& m1, HashMap& m2) { swap(static_cast<Super&>(m1), static_cast<Super&>(m2)); }
 };
+
+static_assert(std::ranges::range<HashSet<const char*,      StrHash>>, "must be a range");
+static_assert(std::ranges::range<HashMap<const char*, int, StrHash>>, "must be a range");
 
 }
 

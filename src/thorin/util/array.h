@@ -28,11 +28,11 @@ class Array;
  * Useful operations are @p skip_front and @p skip_back to create other @p ArrayRef%s.
  */
 template<class T>
-class ArrayRef {
+class ArrayRef : public std::ranges::view_base {
 public:
-    typedef T value_type;
-    typedef const T* const_iterator;
-    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+    using value_type             = T;
+    using const_iterator         = const T*;
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
     ArrayRef()
         : size_(0)
@@ -74,13 +74,13 @@ public:
         swap(*this, array);
     }
 
-    const_iterator begin() const { return ptr_; }
-    const_iterator end() const { return ptr_ + size_; }
-    const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
-    const_reverse_iterator rend() const { return const_reverse_iterator(begin()); }
+    constexpr const_iterator begin() const noexcept { return ptr_; }
+    constexpr const_iterator end() const noexcept { return ptr_ + size_; }
+    constexpr const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
+    constexpr const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
     const T& operator[](size_t i) const { assert(i < size() && "index out of bounds"); return *(ptr_ + i); }
-    size_t size() const { return size_; }
-    bool empty() const { return size_ == 0; }
+    [[nodiscard]] size_t size() const { return size_; }
+    [[nodiscard]] bool empty() const { return size_ == 0; }
     T const& front() const { assert(!empty()); return ptr_[0]; }
     T const& back()  const { assert(!empty()); return ptr_[size_ - 1]; }
     ArrayRef<T> skip_front(size_t num = 1) const { return ArrayRef<T>(size() - num, ptr_ + num); }
@@ -138,7 +138,7 @@ public:
             delete[] data_.ptr;
     }
 
-    size_t size() const { return size_; }
+    [[nodiscard]] size_t size() const { return size_; }
     void shrink(size_t new_size) { size_ = new_size; }
     T* data() { return stack_ ? data_.elems : data_.ptr; }
     const T* data() const { return stack_ ? data_.elems : data_.ptr; }
@@ -180,7 +180,7 @@ public:
     }
     ~ArrayStorage() { delete[] ptr_; }
 
-    size_t size() const { return size_; }
+    [[nodiscard]] size_t size() const { return size_; }
     void shrink(size_t new_size) { size_ = new_size; }
     T* data() { return ptr_; }
     const T* data() const { return ptr_; }
@@ -206,13 +206,13 @@ private:
  *    But once shrunk, there is no way back.
  */
 template<class T>
-class Array {
+class Array : public std::ranges::view_base {
 public:
-    typedef T value_type;
-    typedef T* iterator;
-    typedef const T* const_iterator;
-    typedef std::reverse_iterator<iterator> reverse_iterator;
-    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+    using value_type             = T;
+    using iterator               = T*;
+    using const_iterator         = const T*;
+    using reverse_iterator       = std::reverse_iterator<iterator>;
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
     Array()
         : storage_(0)
@@ -264,14 +264,14 @@ public:
             (*this)[i] = f(i);
     }
 
-    iterator begin() { return data(); }
-    iterator end() { return data() + size(); }
-    reverse_iterator rbegin() { return reverse_iterator(end()); }
-    reverse_iterator rend() { return reverse_iterator(begin()); }
-    const_iterator begin() const { return data(); }
-    const_iterator end() const { return data() + size(); }
-    const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
-    const_reverse_iterator rend() const { return const_reverse_iterator(begin()); }
+    constexpr iterator begin() noexcept { return data(); }
+    constexpr iterator end() noexcept { return data() + size(); }
+    constexpr reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
+    constexpr reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
+    constexpr const_iterator begin() const noexcept { return data(); }
+    constexpr const_iterator end() const noexcept { return data() + size(); }
+    constexpr const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
+    constexpr const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
 
     T& front() { assert(!empty()); return data()[0]; }
     T& back()  { assert(!empty()); return data()[size() - 1]; }
@@ -279,8 +279,8 @@ public:
     const T& back()  const { assert(!empty()); return data()[size() - 1]; }
     T* data() { return storage_.data(); }
     const T* data() const { return storage_.data(); }
-    size_t size() const { return storage_.size(); }
-    bool empty() const { return size() == 0; }
+    [[nodiscard]] size_t size() const { return storage_.size(); }
+    [[nodiscard]] bool empty() const { return size() == 0; }
     ArrayRef<T> skip_front(size_t num = 1) const { return ArrayRef<T>(size() - num, data() + num); }
     ArrayRef<T> skip_back (size_t num = 1) const { return ArrayRef<T>(size() - num, data()); }
     ArrayRef<T> get_front (size_t num = 1) const { assert(num <= size()); return ArrayRef<T>(num, data()); }
