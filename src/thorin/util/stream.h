@@ -118,11 +118,6 @@ public:
     std::string to_string() const { std::ostringstream oss; Stream s(oss); child().stream(s); return oss.str(); }
 };
 
-#define THORIN_INSTANTIATE_STREAMABLE(T)                                    \
-    template<> void        Streamable<T>::write() const;                    \
-    template<> void        Streamable<T>::dump() const;                     \
-    template<> std::string Streamable<T>::to_string() const;
-
 template<typename T> concept PtrStream = requires (T x) { x->stream(std::declval<Stream&>()); };
 template<typename T> concept RefStream = requires (T x) { x. stream(std::declval<Stream&>()); };
 
