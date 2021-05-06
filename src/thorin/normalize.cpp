@@ -91,9 +91,10 @@ template<nat_t w> struct Fold<Wrap, Wrap::add, w> {
         decltype(x) res = x + y;
         if (nuw && res < x) return {};
 
-        const auto [sx, sy] = std::make_pair<std::make_signed_t<T>>(y, x);
-        if (nsw && ((sy > 0 && sx > std::numeric_limits<T>::max() - sy) ||
-                    (sy < 0 && sx < std::numeric_limits<T>::min() - sy)) {
+        using signed_t = std::make_signed_t<decltype(x)>;
+        const auto [sx, sy] = std::make_pair<signed_t>(y, x);
+        if (nsw && ((sy > 0 && sx > std::numeric_limits<signed_t>::max() - sy) ||
+                    (sy < 0 && sx < std::numeric_limits<signed_t>::min() - sy)) {
             return {};
         }
         return res;
@@ -102,11 +103,16 @@ template<nat_t w> struct Fold<Wrap, Wrap::add, w> {
 
 template<nat_t w> struct Fold<Wrap, Wrap::sub, w> {
     static Res run(u64 a, u64 b, bool /*nsw*/, bool /*nuw*/) {
-        using UT = w2u<w>;
-        auto x = get<UT>(a), y = get<UT>(b);
+        auto x = get<w2u<w>>(a), y = get<w2u<w>>(b);
         decltype(x) res = x - y;
-        //if (nuw && y && x > std::numeric_limits<UT>::max() / y) return {};
-        // TODO nsw
+        if (nuw && x < y) return {};
+
+        using signed_t = std::make_signed_t<decltype(x)>;
+        const auto [sx, sy] = std::make_pair<signed_t>(y, x);
+        if (nsw && ((sy > 0 && sx < std::numeric_limits<signed_t>::min() + sy) ||
+                    (sy < 0 && sx > std::numeric_limits<signed_t>::max() + sy)) {
+            return {};
+        }
         return res;
     }
 };
