@@ -89,12 +89,14 @@ template<nat_t w> struct Fold<Wrap, Wrap::add, w> {
     static Res run(u64 a, u64 b, bool nsw, bool nuw) {
         auto x = get<w2u<w>>(a), y = get<w2u<w>>(b);
         decltype(x) res = x + y;
-        if (nuw && res < x) return {};
+        const bool field_wrap = w != 0 && res >= w;
+
+        if (nuw && (res < x || field_wrap)) return {};
 
         using signed_t = std::make_signed_t<decltype(x)>;
-        const auto [sx, sy] = std::make_pair<signed_t>(y, x);
-        if (nsw && ((sy > 0 && sx > std::numeric_limits<signed_t>::max() - sy) ||
-                    (sy < 0 && sx < std::numeric_limits<signed_t>::min() - sy)) {
+        const auto [sx, sy] = std::make_pair<signed_t>(x, y);
+        if (nsw && ((sy > 0 && (sx > std::numeric_limits<signed_t>::max() - sy || field_wrap)) ||
+                    (sy < 0 && (sx < std::numeric_limits<signed_t>::min() - sy || field_wrap)) {
             return {};
         }
         return res;
@@ -118,13 +120,15 @@ template<nat_t w> struct Fold<Wrap, Wrap::sub, w> {
 };
 
 template<nat_t w> struct Fold<Wrap, Wrap::mul, w> {
-    static Res run(u64 a, u64 b, bool /*nsw*/, bool /*nuw*/) {
+    static Res run(u64 a, u64 b, bool nsw, bool nuw) {
         using UT = w2u<w>;
         auto x = get<UT>(a), y = get<UT>(b);
         if constexpr (std::is_same_v<UT, bool>)
             return UT(x & y);
         else
             return UT(x * y);
+
+        if(nuw && x != 0 &&  > std::numeric_limits<UT>::max() / y
         // TODO nsw/nuw
     }
 };
