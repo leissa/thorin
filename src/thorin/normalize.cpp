@@ -130,8 +130,18 @@ template<nat_t w> struct Fold<Wrap, Wrap::mul, w> {
         else
             return UT(x * y);
 
-        if(nuw && x != 0 &&  > std::numeric_limits<UT>::max() / y
-        // TODO nsw/nuw
+        const UT max = std::numeric_limits<UT>::max();
+        const UT min = std::numeric_limits<UT>::min();
+
+        const UT res = x * y;
+
+        if(nuw && x != 0 && y != 0 && (x != res / y || res >= w)) return {};
+        if(nsw && ((res < 0 ? -res : res) >= w ||
+                   (y > 0 && (x > max / b || x < min / b)) ||
+                   (y < 0 && ((y == -1 && x == min) || (x < max / y || x > min / y))))) {
+            return {};
+        }
+        return res;
     }
 };
 
