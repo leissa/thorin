@@ -86,11 +86,16 @@ private:
 template<class T, T, nat_t> struct Fold {};
 
 template<nat_t w> struct Fold<Wrap, Wrap::add, w> {
-    static Res run(u64 a, u64 b, bool /*nsw*/, bool nuw) {
+    static Res run(u64 a, u64 b, bool nsw, bool nuw) {
         auto x = get<w2u<w>>(a), y = get<w2u<w>>(b);
         decltype(x) res = x + y;
         if (nuw && res < x) return {};
-        // TODO nsw
+
+        const auto [sx, sy] = std::make_pair<std::make_signed_t<T>>(y, x);
+        if (nsw && ((sy > 0 && sx > std::numeric_limits<T>::max() - sy) ||
+                    (sy < 0 && sx < std::numeric_limits<T>::min() - sy)) {
+            return {};
+        }
         return res;
     }
 };
