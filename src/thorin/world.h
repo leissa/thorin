@@ -123,10 +123,7 @@ public:
 
     /// @name Lam%bda
     //@{
-    Lam* nom_lam(const Pi* cn, Lam::CC cc = Lam::CC::C, const Def* dbg = {}) {
-        auto lam = insert<Lam>(2, cn, cc, dbg);
-        return lam;
-    }
+    Lam* nom_lam(const Pi* cn, Lam::CC cc = Lam::CC::C, const Def* dbg = {}) { return insert<Lam>(2, cn, cc, dbg); }
     Lam* nom_lam(const Pi* cn, const Def* dbg = {}) { return nom_lam(cn, Lam::CC::C, dbg); }
     const Lam* lam(const Def* dom, const Def* filter, const Def* body, const Def* dbg);
     const Lam* lam(const Def* dom, const Def* body, const Def* dbg) { return lam(dom, lit_true(), body, dbg); }
@@ -185,7 +182,7 @@ public:
     //@{
     /// During a rebuild we cannot infer the type if it is not set yet; in this case we rely on @p ex_type.
     const Def* extract_(const Def* ex_type, const Def* tup, const Def* i, const Def* dbg = {});
-    const Def* extract(const Def* tup, const Def* i, const Def* dbg = {}) { return extract_(nullptr, tup,             i, dbg); }
+    const Def* extract(const Def* tup, const Def* i, const Def* dbg = {}) { return extract_(nullptr, tup,           i, dbg); }
     const Def* extract(const Def* tup, u64 a, u64 i, const Def* dbg = {}) { return extract_(nullptr, tup, lit_i(a, i), dbg); }
     const Def* extract(const Def* tup,        u64 i, const Def* dbg = {}) { return extract(tup, as_lit(tup->arity()), i, dbg); }
     const Def* extract_unsafe(const Def* tup, u64 i, const Def* dbg = {}) { return extract_unsafe(tup, lit_i(0_u64, i), dbg); }
@@ -285,9 +282,9 @@ public:
     const Axiom* type_ptr() { return data_.type_ptr_; }
     const App* type_bool()  { return data_.type_bool_; }
     const App* type_i_width(nat_t width) { return type_i(lit_nat(width2mod(width))); }
-    const App* type_i  (nat_t   mod) { return type_i (lit_nat(  mod)); }
+    const App* type_i(nat_t   mod) { return type_i (lit_nat(  mod)); }
     const App* type_f(nat_t width) { return type_f(lit_nat(width)); }
-    const App* type_i (const Def* mod) { return as<App>(app(type_i(),  mod)); }
+    const App* type_i(const Def*   mod) { return as<App>(app(type_i(),   mod)); }
     const App* type_f(const Def* width) { return as<App>(app(type_f(), width)); }
     const App* type_ptr(const Def* pointee, nat_t addr_space = AddrSpace::Generic, const Def* dbg = {}) { return type_ptr(pointee, lit_nat(addr_space), dbg); }
     const App* type_ptr(const Def* pointee, const Def* addr_space, const Def* dbg = {}) { return as<App>(app(type_ptr(), {pointee, addr_space}, dbg)); }
