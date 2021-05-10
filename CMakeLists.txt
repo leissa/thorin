@@ -58,6 +58,7 @@ configure_file(src/thorin/config.h.in ${CMAKE_BINARY_DIR}/include/thorin/config.
 include_directories(${CMAKE_BINARY_DIR}/include)
 
 add_subdirectory(src)
+add_subdirectory(unit-test)
 
 export(TARGETS thorin FILE ${CMAKE_BINARY_DIR}/share/anydsl/cmake/thorin-exports.cmake)
 configure_file(cmake/thorin-config.cmake.in ${CMAKE_BINARY_DIR}/share/anydsl/cmake/thorin-config.cmake @ONLY)

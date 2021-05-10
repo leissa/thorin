@@ -8,7 +8,8 @@ else()
 endif()
 
 # check for Half library
-find_package(Half REQUIRED)
+message(${CMAKE_MODULE_PATH})
+find_package(Half REQUIRED PATHS ../extern/half/)
 message(STATUS "Building with Half library from ${Half_INCLUDE_DIRS}.")
 include_directories(${Half_INCLUDE_DIRS})
 
