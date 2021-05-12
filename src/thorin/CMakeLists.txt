@@ -57,7 +57,6 @@ set(THORIN_SOURCES
     pass/rw/ret_wrap.h
     pass/rw/bound_elim.cpp
     pass/rw/bound_elim.h
-    #    util/args.h
     util/array.h
     util/bitset.cpp
     util/bitset.h
