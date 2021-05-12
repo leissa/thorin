@@ -1,6 +1,8 @@
 #include "thorin/def.h"
 #include "thorin/world.h"
 
+#include <cstdint>
+
 // TODO rewrite int normalization to work on all int modulos.
 // This would also remove a lot of template magic.
 
@@ -86,35 +88,72 @@ private:
 template<class T, T, nat_t> struct Fold {};
 
 template<nat_t w> struct Fold<Wrap, Wrap::add, w> {
-    static Res run(u64 a, u64 b, bool /*nsw*/, bool nuw) {
+    static Res run(u64 a, u64 b, bool nsw, bool nuw) {
         auto x = get<w2u<w>>(a), y = get<w2u<w>>(b);
         decltype(x) res = x + y;
-        if (nuw && res < x) return {};
-        // TODO nsw
+        const bool field_wrap = w != 0 && res >= w;
+
+        if (nuw && (res < x || field_wrap)) return {};
+
+        if constexpr(!std::is_same_v<decltype(x), bool>) {
+            using signed_t = std::make_signed_t<decltype(x)>;
+
+            const auto [sx, sy] = static_cast<std::pair<signed_t, signed_t>>(std::make_pair(x, y));
+            const auto [max, min] = static_cast<std::pair<signed_t, signed_t>>(
+                                      std::make_pair<signed_t>(std::numeric_limits<signed_t>::max() - sy,
+                                                               std::numeric_limits<signed_t>::min() - sy));
+            if (nsw && (field_wrap || (sy > 0 && sx > max) || (sy < 0 && sx < min))) {
+                return {};
+            }
+        }
         return res;
     }
 };
 
 template<nat_t w> struct Fold<Wrap, Wrap::sub, w> {
-    static Res run(u64 a, u64 b, bool /*nsw*/, bool /*nuw*/) {
-        using UT = w2u<w>;
-        auto x = get<UT>(a), y = get<UT>(b);
+    static Res run(u64 a, u64 b, bool nsw, bool nuw) {
+        auto x = get<w2u<w>>(a), y = get<w2u<w>>(b);
         decltype(x) res = x - y;
-        //if (nuw && y && x > std::numeric_limits<UT>::max() / y) return {};
-        // TODO nsw
+        const bool field_wrap = w != 0 && res >= w;
+
+        if (nuw && (x < y || field_wrap)) return {};
+
+        if constexpr(!std::is_same_v<decltype(x), bool>) {
+            using signed_t = std::make_signed_t<decltype(x)>;
+
+            const auto [sx, sy] = static_cast<std::pair<signed_t, signed_t>>(std::make_pair(x, y));
+            const auto [max, min] = static_cast<std::pair<signed_t, signed_t>>(
+                                      std::make_pair<signed_t>(std::numeric_limits<signed_t>::max() + sy,
+                                                               std::numeric_limits<signed_t>::min() + sy));
+            if (nsw && (field_wrap || (sy > 0 && sx < min) || (sy < 0 && sx > max))) {
+                return {};
+            }
+        }
         return res;
     }
 };
 
 template<nat_t w> struct Fold<Wrap, Wrap::mul, w> {
-    static Res run(u64 a, u64 b, bool /*nsw*/, bool /*nuw*/) {
+    static Res run(u64 a, u64 b, bool nsw, bool nuw) {
         using UT = w2u<w>;
         auto x = get<UT>(a), y = get<UT>(b);
         if constexpr (std::is_same_v<UT, bool>)
             return UT(x & y);
-        else
-            return UT(x * y);
-        // TODO nsw/nuw
+        else {
+            const UT max = std::numeric_limits<UT>::max();
+            const UT min = std::numeric_limits<UT>::min();
+
+            const UT res = x * y;
+
+            if(nuw && x != 0 && y != 0 && (x != res / y || res >= w)) return {};
+            if(nsw && ((res < 0 ? -res : res) >= w ||
+                       (y > 0 && (x > max / b || x < min / b)) ||
+                       (y < 0 && ((y == static_cast<UT>(-1) && x == min) || (x < max / y || x > min / y))))) {
+                return {};
+            }
+
+            return res;
+        }
     }
 };
 

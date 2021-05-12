@@ -25,7 +25,7 @@ find_path(Thorin_ROOT_DIR
 list(APPEND CMAKE_MODULE_PATH "${Thorin_ROOT_DIR}/cmake/modules")
 
 find_path(Half_DIR NAMES half.hpp PATHS ${Half_DIR} $ENV{Half_DIR} "@Half_DIR@" "@Half_INCLUDE_DIR@")
-find_package(Half REQUIRED)
+find_package(Half REQUIRED PATHS "@CMAKE_CURRENT_SOURCE_DIR@/extern/half/")
 
 set(Thorin_HAS_LLVM_SUPPORT @LLVM_FOUND@)
 set(Thorin_HAS_RV_SUPPORT @RV_FOUND@)
