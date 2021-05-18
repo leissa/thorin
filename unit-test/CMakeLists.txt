@@ -29,7 +29,7 @@ macro(package_add_test TESTNAME)
     set_target_properties(${TESTNAME} PROPERTIES FOLDER tests)
 endmacro()
 
-package_add_test(unit-test
+package_add_test(thorin-unit-test
     test.cpp
 )
 
