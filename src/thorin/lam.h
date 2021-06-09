@@ -51,19 +51,17 @@ public:
     friend class World;
 };
 
-class Lam : public Def {
-public:
-    /// calling convention
-    enum class CC : u8 {
-        C,          ///< C calling convention.
-        Device,     ///< Device calling convention. These are special functions only available on a particular device.
-    };
+enum class CallConv : u8 {
+    C,          ///< C calling convention.
+    Device,     ///< Device calling convention. These are special functions only available on a particular device.
+};
 
+class Lam : public Def {
 private:
     Lam(const Pi* pi, const Def* filter, const Def* body, const Def* dbg)
         : Def(Node, pi, {filter, body}, 0, dbg)
     {}
-    Lam(const Pi* pi, CC cc, const Def* dbg)
+    Lam(const Pi* pi, CallConv cc, const Def* dbg)
         : Def(Node, pi, 2, u64(cc), dbg)
     {}
 
@@ -108,10 +106,10 @@ public:
     const Def* rebuild(World&, const Def*, Defs, const Def*) const override;
     Lam* stub(World&, const Def*, const Def*) override;
     //@}
-    /// @name get/set fields - CC
+    /// @name get/set fields - CallConv
     //@{
-    CC cc() const { return CC(fields()); }
-    void set_cc(CC cc) { fields_ = u64(cc); }
+    CallConv call_conv() const { return CallConv(fields()); }
+    void set_call_conv(CallConv cc) { fields_ = u64(cc); }
     //@}
 
     bool is_basicblock() const;

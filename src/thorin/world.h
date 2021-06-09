@@ -123,8 +123,8 @@ public:
 
     /// @name Lam%bda
     //@{
-    Lam* nom_lam(const Pi* cn, Lam::CC cc = Lam::CC::C, const Def* dbg = {}) { return insert<Lam>(2, cn, cc, dbg); }
-    Lam* nom_lam(const Pi* cn, const Def* dbg = {}) { return nom_lam(cn, Lam::CC::C, dbg); }
+    Lam* nom_lam(const Pi* cn, CallConv cc = CallConv::C, const Def* dbg = {}) { return insert<Lam>(2, cn, cc, dbg); }
+    Lam* nom_lam(const Pi* cn, const Def* dbg = {}) { return nom_lam(cn, CallConv::C, dbg); }
     const Lam* lam(const Def* dom, const Def* filter, const Def* body, const Def* dbg);
     const Lam* lam(const Def* dom, const Def* body, const Def* dbg) { return lam(dom, lit_true(), body, dbg); }
     //@}

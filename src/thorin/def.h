@@ -320,7 +320,6 @@ protected:
     u32 num_ops_;
     hash_t hash_;
     mutable Uses uses_;
-    mutable const Def* substitute_ = nullptr; // TODO remove this
     mutable const Def* dbg_;
     union {
         const Def* type_;
