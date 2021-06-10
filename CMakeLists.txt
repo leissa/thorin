@@ -35,8 +35,6 @@ include_directories(${CMAKE_BINARY_DIR}/include)
 add_subdirectory(src)
 
 if(PACKAGE_TESTS)
-    enable_testing()
-    include(GoogleTest)
     add_subdirectory(gtest)
 endif()
 

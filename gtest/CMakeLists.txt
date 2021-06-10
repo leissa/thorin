@@ -1,3 +1,6 @@
+enable_testing()
+include(GoogleTest)
+
 add_subdirectory("${PROJECT_SOURCE_DIR}/googletest" "googletest")
 
 # keep cache clean
@@ -17,7 +20,8 @@ add_executable(thorin-gtest
     test.cpp
 )
 
-target_include_directories(thorin-gtest PRIVATE ${PROJECT_SOURCE_DIR}/src half/include)
+target_include_directories(thorin-gtest PRIVATE ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/half/include)
 target_link_libraries(thorin-gtest PUBLIC gtest_main thorin)
+target_link_libraries(dimpl-gtest gtest_main libdimpl)
 
 gtest_discover_tests(thorin-gtest TEST_PREFIX "thorin.")
