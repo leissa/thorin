@@ -33,18 +33,12 @@ add_library(thorin
     thorin/util/stream.cpp
 )
 
-find_package(Half REQUIRED PATHS ${PROJECT_SOURCE_DIR}/half/)
-message(STATUS "Building with Half library from ${Half_INCLUDE_DIRS}.")
-
 if(MSVC)
     target_compile_definitions(thorin PUBLIC _SCL_SECURE_NO_WARNINGS _CRT_SECURE_NO_WARNINGS)
     target_compile_options    (thorin PUBLIC /wd4800 /wd4520 /experimental:external /external:anglebrackets /external:W0)
 else()
     target_compile_options    (thorin PUBLIC -fno-rtti PRIVATE -Wall -Wextra)
 endif()
-
-configure_file(thorin/config.h.in ${CMAKE_BINARY_DIR}/include/thorin/config.h @ONLY)
-target_include_directories(thorin PUBLIC ${Half_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/include)
 
 # check for colored terminal
 set(COLOR_TTY_AVAILABLE TRUE)
@@ -56,3 +50,9 @@ set(COLORIZE_OUTPUT ${COLOR_TTY_AVAILABLE} CACHE BOOL "Set to true to enable col
 if(COLORIZE_OUTPUT)
     target_compile_definitions(thorin PRIVATE COLORIZE_LOG)
 endif()
+
+find_package(Half REQUIRED PATHS ${PROJECT_SOURCE_DIR}/half/)
+message(STATUS "Building with Half library from ${Half_INCLUDE_DIRS}.")
+
+configure_file(thorin/config.h.in ${CMAKE_BINARY_DIR}/include/thorin/config.h @ONLY)
+target_include_directories(thorin PUBLIC ${Half_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/include)
