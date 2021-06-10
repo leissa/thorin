@@ -9,8 +9,6 @@ else()
     add_compile_options("-Wall" "-Wextra")
 endif()
 
-set_target_properties(thorin PROPERTY CXX_STANDARD 20)
-
 # check for Half library
 find_package(Half REQUIRED PATHS ${PROJECT_SOURCE_DIR}/half/)
 message(STATUS "Building with Half library from ${Half_INCLUDE_DIRS}.")
