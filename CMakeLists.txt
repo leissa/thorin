@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.4.3 FATAL_ERROR)
 project(Thorin VERSION 2.0 DESCRIPTION "the higher-order intermediate representation")
 
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+option(BUILD_TESTING "Build the tests" ON)
 option(THORIN_PROFILE "profile complexity in thorin::HashTable - only works in Debug build" ON)
-option(PACKAGE_TESTS "Build the tests" ON)
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "limited config" FORCE)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS 1)
@@ -29,12 +29,8 @@ if(THORIN_PROFILE)
     set(THORIN_ENABLE_PROFILING TRUE)
 endif()
 
-configure_file(src/thorin/config.h.in ${CMAKE_BINARY_DIR}/include/thorin/config.h @ONLY)
-include_directories(${CMAKE_BINARY_DIR}/include)
-
 add_subdirectory(src)
-
-if(PACKAGE_TESTS)
+if(BUILD_TESTING)
     add_subdirectory(gtest)
 endif()
 
