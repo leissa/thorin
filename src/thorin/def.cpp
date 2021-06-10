@@ -242,9 +242,9 @@ void Def::finalize() {
     }
 
     assert(!dbg() || dbg()->no_dep());
-    if (isa<Pi>(this))  ++order_;
+    if (isa<Pi>(this)) ++order_;
     if (auto var = isa<Var>(this)) {
-        var->nom()->var_ = true;
+        const_cast<const Var*>(var)->binder()->var_ = true; // must be a structural Var
         dep_ = Dep::Var;
     }
 }

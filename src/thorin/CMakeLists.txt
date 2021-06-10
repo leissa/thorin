@@ -1,4 +1,4 @@
-set(THORIN_SOURCES
+add_library(thorin
     axiom.cpp
     axiom.h
     check.cpp
@@ -70,5 +70,3 @@ set(THORIN_SOURCES
     util/types.h
     util/utility.h
 )
-
-add_library(thorin ${THORIN_SOURCES})

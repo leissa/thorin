@@ -386,11 +386,15 @@ private:
     Var(const Def* type, Def* nom, const Def* dbg)
         : Def(Node, type, Defs{nom}, 0, dbg)
     {}
+    Var(const Def* type, const Def* dbg)
+        : Def(Node, type, 1, 0, dbg)
+    {}
 
 public:
     /// @name ops
     //@{
-    Def* nom() const { return op(0)->as_nom(); }
+    Def* binder() const { return op(0)->as_nom(); }
+    const Def* binder() { return op(0); }
     //@}
     /// @name virtual methods
     //@{

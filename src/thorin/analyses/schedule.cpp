@@ -45,7 +45,7 @@ Scheduler::Scheduler(const Scope& s)
 
 Def* Scheduler::early(const Def* def) {
     if (auto nom = early_.lookup(def)) return *nom;
-    if (auto var = isa<Var>(def)) return early_[def] = var->nom();
+    if (auto var = isa<Var>(def)) return early_[def] = var->binder();
 
     auto result = scope().entry();
     for (auto op : def->extended_ops()) {
@@ -66,7 +66,7 @@ Def* Scheduler::late(const Def* def) {
     if (auto nom = def->isa_nom()) {
         result = nom;
     } else if (auto var = isa<Var>(def)) {
-        result = var->nom();
+        result = var->binder();
     } else {
         for (auto use : uses(def)) {
             auto nom = late(use);
