@@ -1,36 +1,36 @@
 add_library(thorin
-    thorin/axiom.cpp
-    thorin/check.cpp
-    thorin/debug.cpp
-    thorin/def.cpp
-    thorin/error.cpp
-    thorin/lam.cpp
-    thorin/lattice.cpp
-    thorin/normalize.cpp
-    thorin/rewrite.cpp
-    thorin/stream.cpp
-    thorin/tuple.cpp
-    thorin/world.cpp
-    thorin/analyses/cfg.cpp
-    thorin/analyses/deptree.cpp
-    thorin/analyses/domfrontier.cpp
-    thorin/analyses/domtree.cpp
-    thorin/analyses/looptree.cpp
-    thorin/analyses/schedule.cpp
-    thorin/analyses/scope.cpp
-    thorin/pass/optimize.cpp
-    thorin/pass/pass.cpp
-    thorin/pass/fp/eta_conv.cpp
-    thorin/pass/fp/beta_red.cpp
-    thorin/pass/fp/copy_prop.cpp
-    thorin/pass/fp/scalarize.cpp
-    thorin/pass/fp/ssa_constr.cpp
-    thorin/pass/rw/partial_eval.cpp
-    thorin/pass/rw/ret_wrap.cpp
-    thorin/pass/rw/bound_elim.cpp
-    thorin/util/bitset.cpp
-    thorin/util/hash.cpp
-    thorin/util/stream.cpp
+    axiom.cpp
+    check.cpp
+    debug.cpp
+    def.cpp
+    error.cpp
+    lam.cpp
+    lattice.cpp
+    normalize.cpp
+    rewrite.cpp
+    stream.cpp
+    tuple.cpp
+    world.cpp
+    analyses/cfg.cpp
+    analyses/deptree.cpp
+    analyses/domfrontier.cpp
+    analyses/domtree.cpp
+    analyses/looptree.cpp
+    analyses/schedule.cpp
+    analyses/scope.cpp
+    pass/optimize.cpp
+    pass/pass.cpp
+    pass/fp/eta_conv.cpp
+    pass/fp/beta_red.cpp
+    pass/fp/copy_prop.cpp
+    pass/fp/scalarize.cpp
+    pass/fp/ssa_constr.cpp
+    pass/rw/partial_eval.cpp
+    pass/rw/ret_wrap.cpp
+    pass/rw/bound_elim.cpp
+    util/bitset.cpp
+    util/hash.cpp
+    util/stream.cpp
 )
 
 if(MSVC)
@@ -54,5 +54,5 @@ endif()
 find_package(Half REQUIRED PATHS ${PROJECT_SOURCE_DIR}/half/)
 message(STATUS "Building with Half library from ${Half_INCLUDE_DIRS}.")
 
-configure_file(thorin/config.h.in ${CMAKE_BINARY_DIR}/include/thorin/config.h @ONLY)
-target_include_directories(thorin PUBLIC ${Half_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/include)
+configure_file(${PROJECT_SOURCE_DIR}/config.h.in ${CMAKE_BINARY_DIR}/include/thorin/config.h @ONLY)
+target_include_directories(thorin PUBLIC ${Half_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/include)

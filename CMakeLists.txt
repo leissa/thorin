@@ -25,6 +25,7 @@ if(THORIN_PROFILE)
 endif()
 
 add_subdirectory(src)
+
 if(BUILD_TESTING)
     include(GoogleTest)
     add_subdirectory(googletest)
