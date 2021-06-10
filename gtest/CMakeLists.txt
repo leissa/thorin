@@ -21,7 +21,6 @@ add_executable(thorin-gtest
 )
 
 target_include_directories(thorin-gtest PRIVATE ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/half/include)
-target_link_libraries(thorin-gtest PUBLIC gtest_main thorin)
-target_link_libraries(dimpl-gtest gtest_main libdimpl)
+target_link_libraries(thorin-gtest gtest_main thorin)
 
 gtest_discover_tests(thorin-gtest TEST_PREFIX "thorin.")
