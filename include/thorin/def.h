@@ -131,7 +131,7 @@ public:
 
     /// @name type
     //@{
-    const Def* type() const { assert(node() != Node::Space); return type_; }
+    const Def* type() const { assert(node() != Node::Kind); return type_; }
     Sort level() const;
     Sort sort() const;
     unsigned order() const { /*TODO assertion*/return order_; }
@@ -277,9 +277,9 @@ public:
     size_t gid() const { return gid_; }
     hash_t hash() const { return hash_; }
     World& world() const {
-        if (node()                 == Node::Space) return *world_;
-        if (type()->node()         == Node::Space) return *type()->world_;
-        if (type()->type()->node() == Node::Space) return *type()->type()->world_;
+        if (node()                 == Node::Kind) return *world_;
+        if (type()->node()         == Node::Kind) return *type()->world_;
+        if (type()->type()->node() == Node::Kind) return *type()->type()->world_;
         return *type()->type()->type()->world_;
     }
     //@}
@@ -410,9 +410,9 @@ using VarMap  = GIDMap<const Var*, To>;
 using VarSet  = GIDSet<const Var*>;
 using Var2Var = VarMap<const Var*>;
 
-class Space : public Def {
+class Kind : public Def {
 private:
-    Space(World& world)
+    Kind(World& world)
         : Def(Node, reinterpret_cast<const Def*>(&world), Defs{}, 0, nullptr)
     {}
 
@@ -422,13 +422,13 @@ public:
     const Def* rebuild(World&, const Def*, Defs, const Def*) const override;
     //@}
 
-    static constexpr auto Node = Node::Space;
+    static constexpr auto Node = Node::Kind;
     friend class World;
 };
 
-class Kind : public Def {
+class Type : public Def {
 private:
-    Kind(World&);
+    Type(World&);
 
 public:
     /// @name virtual methods
@@ -436,7 +436,7 @@ public:
     const Def* rebuild(World&, const Def*, Defs, const Def*) const override;
     //@}
 
-    static constexpr auto Node = Node::Kind;
+    static constexpr auto Node = Node::Type;
     friend class World;
 };
 

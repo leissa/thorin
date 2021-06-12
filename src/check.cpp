@@ -5,7 +5,7 @@
 namespace thorin {
 
 bool Checker::equiv(const Def* d1, const Def* d2) {
-    if (d1 == d2 || (!d1->is_set() && !d2->is_set()) || (isa<Space>(d1) && isa<Space>(d2))) return true;
+    if (d1 == d2 || (!d1->is_set() && !d2->is_set()) || (isa<Kind>(d1) && isa<Kind>(d2))) return true;
     if (d1->level() != d2->level()) return false;
 
     // normalize: always put smaller gid to the left

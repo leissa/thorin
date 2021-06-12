@@ -28,7 +28,7 @@ Def::Def(node_t node, const Def* type, Defs ops, uint64_t fields, const Def* dbg
     gid_ = world().next_gid();
     std::copy(ops.begin(), ops.end(), ops_ptr());
 
-    if (node == Node::Space) {
+    if (node == Node::Kind) {
         hash_ = murmur3(gid());
     } else {
         hash_ = type->gid();
@@ -57,12 +57,12 @@ Def::Def(node_t node, const Def* type, size_t num_ops, uint64_t fields, const De
     if (!type->no_dep()) type->uses_.emplace(this, -1);
 }
 
-Kind::Kind(World& world)
-    : Def(Node, (const Def*) world.space(), Defs{}, 0, nullptr)
+Type::Type(World& world)
+    : Def(Node, (const Def*) world.kind(), Defs{}, 0, nullptr)
 {}
 
 Nat::Nat(World& world)
-    : Def(Node, world.kind(), Defs{}, 0, nullptr)
+    : Def(Node, world.type(), Defs{}, 0, nullptr)
 {}
 
 /*
@@ -76,7 +76,7 @@ const Def* Et     ::rebuild(World& w, const Def* t, Defs o, const Def* dbg) cons
 const Def* Extract::rebuild(World& w, const Def* t, Defs o, const Def* dbg) const { return w.extract_(t, o[0], o[1], dbg); }
 const Def* Global ::rebuild(World& w, const Def*  , Defs o, const Def* dbg) const { return w.global(o[0], o[1], is_mutable(), dbg); }
 const Def* Insert ::rebuild(World& w, const Def*  , Defs o, const Def* dbg) const { return w.insert(o[0], o[1], o[2], dbg); }
-const Def* Kind   ::rebuild(World& w, const Def*  , Defs  , const Def*    ) const { return w.kind(); }
+const Def* Type   ::rebuild(World& w, const Def*  , Defs  , const Def*    ) const { return w.type(); }
 const Def* Lam    ::rebuild(World& w, const Def* t, Defs o, const Def* dbg) const { return w.lam(as<Pi>(t), o[0], o[1], dbg); }
 const Def* Lit    ::rebuild(World& w, const Def* t, Defs  , const Def* dbg) const { return w.lit(t, get(), dbg); }
 const Def* Nat    ::rebuild(World& w, const Def*  , Defs  , const Def*    ) const { return w.type_nat(); }
@@ -86,7 +86,7 @@ const Def* Pi     ::rebuild(World& w, const Def*  , Defs o, const Def* dbg) cons
 const Def* Pick   ::rebuild(World& w, const Def* t, Defs o, const Def* dbg) const { return w.pick(t, o[0], dbg); }
 const Def* Proxy  ::rebuild(World& w, const Def* t, Defs o, const Def* dbg) const { return w.proxy(t, o, id(), flags(), dbg); }
 const Def* Sigma  ::rebuild(World& w, const Def*  , Defs o, const Def* dbg) const { return w.sigma(o, dbg); }
-const Def* Space  ::rebuild(World& w, const Def*  , Defs  , const Def*    ) const { return w.space(); }
+const Def* Kind   ::rebuild(World& w, const Def*  , Defs  , const Def*    ) const { return w.kind(); }
 const Def* Test   ::rebuild(World& w, const Def*  , Defs o, const Def* dbg) const { return w.test(o[0], o[1], o[2], o[3], dbg); }
 const Def* Tuple  ::rebuild(World& w, const Def* t, Defs o, const Def* dbg) const { return w.tuple(t, o, dbg); }
 const Def* Vel    ::rebuild(World& w, const Def* t, Defs o, const Def* dbg) const { return w.vel(t, o[0], dbg); }
@@ -134,7 +134,7 @@ THORIN_NODE(CODE)
 }
 
 Defs Def::extended_ops() const {
-    if (isa<Space>(this)) return Defs();
+    if (isa<Kind>(this)) return Defs();
 
     size_t offset = dbg() ? 2 : 1;
     return Defs((is_set() ? num_ops_ : 0) + offset, ops_ptr() - offset);
@@ -156,16 +156,16 @@ const Def* Def::var(size_t i) { return var(i, nullptr); }
 size_t     Def::num_vars() { return var()->num_outs(); }
 
 Sort Def::level() const {
-    if (isa<Space>(          this)) return Sort::Space;
-    if (isa<Space>(        type())) return Sort::Kind;
-    if (isa<Space>(type()->type())) return Sort::Type;
+    if (isa<Kind>(          this)) return Sort::Space;
+    if (isa<Kind>(        type())) return Sort::Kind;
+    if (isa<Kind>(type()->type())) return Sort::Type;
     return Sort::Term;
 }
 
 Sort Def::sort() const {
     switch (node()) {
-        case Node::Space: return Sort::Space;
-        case Node::Kind:  return Sort::Kind;
+        case Node::Kind: return Sort::Space;
+        case Node::Type: return Sort::Kind;
         case Node::Arr:
         case Node::Nat:
         case Node::Pi:
@@ -190,7 +190,7 @@ const Def* Def::arity() const {
 }
 
 bool Def::equal(const Def* other) const {
-    if (isa<Space>(this) || this->isa_nom() || other->isa_nom())
+    if (isa<Kind>(this) || this->isa_nom() || other->isa_nom())
         return this == other;
 
     bool result = this->node() == other->node() && this->fields() == other->fields() && this->num_ops() == other->num_ops() && this->type() == other->type();
@@ -216,7 +216,7 @@ void Def::set_name(const std::string& n) const {
         auto file = w.tuple_str("");
         auto begin = w.lit_nat_max();
         auto finis = w.lit_nat_max();
-        auto meta = w.bot(w.bot_kind());
+        auto meta = w.bot(w.bot_type());
         dbg_ = w.tuple({name, w.tuple({file, begin, finis}), meta});
     } else {
         dbg_ = w.insert(dbg_, 3_s, 0_s, name);
@@ -233,7 +233,7 @@ void Def::finalize() {
         order_ = std::max(order_, op(i)->order_);
     }
 
-    if (!isa<Space>(this)) {
+    if (!isa<Kind>(this)) {
         if (auto dep = type()->dep(); dep != Dep::Bot) {
             dep_ |= dep;
             const auto& p = type()->uses_.emplace(this, -1);

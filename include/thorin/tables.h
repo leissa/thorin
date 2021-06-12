@@ -12,7 +12,7 @@ using fields_t = u64;
 using nat_t    = u64;
 
 #define THORIN_NODE(m)                                                        \
-    m(Space, space)     m(Kind, kind)                                         \
+    m(Kind, Kind)       m(Type, Type)                                         \
     m(Pi, pi)           m(Lam, lam)     m(App, app)                           \
     m(Sigma, sigma)     m(Tuple, tuple) m(Extract, extract) m(Insert, insert) \
     m(Arr, arr)         m(Pack, pack)                                         \
@@ -21,8 +21,8 @@ using nat_t    = u64;
     m(Proxy, proxy)                                                           \
     m(Axiom, axiom)                                                           \
     m(Lit, lit)                                                               \
-    m(Nat, nat)                                                               \
-    m(Var, var)                                                           \
+    m(Nat, Nat)                                                               \
+    m(Var, var)                                                               \
     m(Global, global)
 
 #define THORIN_TAG(m)                                               \

@@ -87,17 +87,17 @@ public:
     u32 next_gid() { return ++state_.cur_gid; }
     //@}
 
-    /// @name Space, Kind, Proxy
+    /// @name Type, Kind, Proxy
     //@{
-    const Space* space() const { return data_.space_;   }
-    const Kind* kind() const { return data_.kind_; }
+    const Type* type() const { return data_.type_; }
+    const Kind* kind() const { return data_.kind_;   }
     const Proxy* proxy(const Def* type, Defs ops, tag_t index, flags_t flags, const Def* dbg = {}) { return unify<Proxy>(ops.size(), type, ops, index, flags, dbg); }
     //@}
 
     /// @name var
     //@{
     /// @em Nominal @p Var for @em structural binders.
-    Var* var(const Def* type, const Def* dbg = {}) { return insert<Var>(1, type, dbg); }
+    Var* nom_var(const Def* type, const Def* dbg = {}) { return insert<Var>(1, type, dbg); }
     /// @em Structural @p Var for @em nominal binders.
     const Var* var(const Def* type, Def* nom, const Def* dbg = {}) { return unify<Var>(1, type, nom, dbg); }
     //@}
@@ -121,7 +121,7 @@ public:
     /// @name Pi: continuation type (cn), i.e., @p Pi type with codom @p Bot%tom
     //@{
     const Pi* cn() { return cn(sigma()); }
-    const Pi* cn(const Def* dom, const Def* dbg = {}) { return pi(dom, bot_kind(), dbg); }
+    const Pi* cn(const Def* dom, const Def* dbg = {}) { return pi(dom, bot_type(), dbg); }
     const Pi* cn(Defs doms, const Def* dbg = {}) { return cn(sigma(doms), dbg); }
     /// Same as @p cn/@p pi but adds a @p mem @p Var to each @p Pi
     const Pi* cn_mem(const Def* dom, const Def* dbg = {}) { return cn({ type_mem(), dom }, dbg); }
@@ -147,15 +147,15 @@ public:
     /// @name Sigma
     //@{
     Sigma* nom_sigma(const Def* type, size_t size, const Def* dbg = {}) { return insert<Sigma>(size, type, size, dbg); }
-    Sigma* nom_sigma(size_t size, const Def* dbg = {}) { return nom_sigma(kind(), size, dbg); } ///< a @em nom @p Sigma of type @p kind
+    Sigma* nom_sigma(size_t size, const Def* dbg = {}) { return nom_sigma(type(), size, dbg); } ///< a @em nom @p Sigma of type @p Type
     const Def* sigma(Defs ops, const Def* dbg = {});
-    const Sigma* sigma() { return data_.sigma_; } ///< the unit type within @p kind()
+    const Sigma* sigma() { return data_.sigma_; } ///< the unit type within @p type()
     //@}
 
     /// @name Arr
     //@{
     Arr* nom_arr(const Def* type, const Def* shape, const Def* dbg = {}) { return insert<Arr>(2, type, shape, dbg); }
-    Arr* nom_arr(const Def* shape, const Def* dbg = {}) { return nom_arr(kind(), shape, dbg); }
+    Arr* nom_arr(const Def* shape, const Def* dbg = {}) { return nom_arr(type(), shape, dbg); }
     const Def* arr(const Def* shape, const Def* body, const Def* dbg = {});
     const Def* arr(Defs shape, const Def* body, const Def* dbg = {});
     const Def* arr(u64 n, const Def* body, const Def* dbg = {}) { return arr(lit_nat(n), body, dbg); }
@@ -252,19 +252,19 @@ public:
     template<bool up> const Def* ext(const Def* type, const Def* dbg = {});
     const Def* bot(const Def* type, const Def* dbg = {}) { return ext<false>(type, dbg); }
     const Def* top(const Def* type, const Def* dbg = {}) { return ext< true>(type, dbg); }
-    const Def* bot_kind() { return data_.bot_kind_; }
+    const Def* bot_type() { return data_.bot_type_; }
     const Def* top_nat () { return data_.top_nat_; }
     template<bool up> TBound<up>* nom_bound(const Def* type, size_t size, const Def* dbg = {}) { return insert<TBound<up>>(size, type, size, dbg); }
-    template<bool up> TBound<up>* nom_bound(size_t size, const Def* dbg = {}) { return nom_bound<up>(kind(), size, dbg); }   ///< a @em nom @p Bound of type @p kind
+    template<bool up> TBound<up>* nom_bound(size_t size, const Def* dbg = {}) { return nom_bound<up>(type(), size, dbg); }   ///< a @em nom @p Bound of type @p type
     template<bool up> const Def* bound(Defs ops, const Def* dbg = {});
     Join* nom_join(const Def* type, size_t size, const Def* dbg = {}) { return nom_bound<true >(type, size, dbg); }
     Meet* nom_meet(const Def* type, size_t size, const Def* dbg = {}) { return nom_bound<false>(type, size, dbg); }
-    Join* nom_join(size_t size, const Def* dbg = {}) { return nom_join(kind(), size, dbg); }
-    Meet* nom_meet(size_t size, const Def* dbg = {}) { return nom_meet(kind(), size, dbg); }
+    Join* nom_join(size_t size, const Def* dbg = {}) { return nom_join(type(), size, dbg); }
+    Meet* nom_meet(size_t size, const Def* dbg = {}) { return nom_meet(type(), size, dbg); }
     const Def* join(Defs ops, const Def* dbg = {}) { return bound<true >(ops, dbg); }
     const Def* meet(Defs ops, const Def* dbg = {}) { return bound<false>(ops, dbg); }
     const Def* et(const Def* type, Defs ops, const Def* dbg = {});
-    const Def* et(Defs ops, const Def* dbg = {}) { return et(infer_kind(ops), ops, dbg); }                                  ///< Infers the type using a @em structural @p Meet.
+    const Def* et(Defs ops, const Def* dbg = {}) { return et(infer_type(ops), ops, dbg); }  ///< Infers the type using a @em structural @p Meet.
     const Def* vel(const Def* type, const Def* value, const Def* dbg = {});
     const Def* pick(const Def* type, const Def* value, const Def* dbg = {});
     const Def* test(const Def* value, const Def* probe, const Def* match, const Def* clash, const Def* dbg = {});
@@ -380,7 +380,7 @@ public:
     //@{
     const Def* dbg(Debug);
     const Def* infer(const Def* def) { return isa_sized_type(def->type()); }
-    const Def* infer_kind(Defs) const;
+    const Def* infer_type(Defs) const;
     //@}
 
     /// @name partial evaluation done?
@@ -474,9 +474,9 @@ public:
         swap(w1.checker_, w2.checker_);
         swap(w1.err_,     w2.err_);
 
-        swap(w1.data_.space_->world_, w2.data_.space_->world_);
-        assert(&w1.space()->world() == &w1);
-        assert(&w2.space()->world() == &w2);
+        swap(w1.data_.kind_->world_, w2.data_.kind_->world_);
+        assert(&w1.kind()->world() == &w1);
+        assert(&w2.kind()->world() == &w2);
     }
 
 private:
@@ -597,9 +597,9 @@ private:
     } state_;
 
     struct Data {
-        Space* space_;
-        const Kind* kind_;
-        const Bot* bot_kind_;
+        Kind* kind_;
+        const Type* type_;
+        const Bot* bot_type_;
         const App* type_bool_;
         const Top* top_nat_;
         const Sigma* sigma_;

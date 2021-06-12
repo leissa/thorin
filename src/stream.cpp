@@ -14,9 +14,9 @@ namespace thorin {
 
 Stream& stream(Stream& s, const Def* def) {
     if (false) {}
-    else if (isa<Space>(def)) return s.fmt("□");
-    else if (isa<Kind >(def)) return s.fmt("★");
-    else if (isa<Nat  >(def)) return s.fmt("nat");
+    else if (isa<Kind>(def)) return s.fmt("□");
+    else if (isa<Type>(def)) return s.fmt("Type");
+    else if (isa<Nat >(def)) return s.fmt("Nat");
     else if (auto bot = isa<Bot>(def)) return s.fmt("⊥∷{}", bot->type());
     else if (auto top = isa<Top>(def)) return s.fmt("⊤∷{}", top->type());
     else if (auto axiom = isa<Axiom>(def)) return s.fmt(":{}", axiom->debug().name);
