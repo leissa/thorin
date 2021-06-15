@@ -87,18 +87,11 @@ public:
     u32 next_gid() { return ++state_.cur_gid; }
     //@}
 
-    /// @name Type, Kind, Proxy
+    /// @name Type, Kind, Proxy, Var
     //@{
     const Type* type() const { return data_.type_; }
     const Kind* kind() const { return data_.kind_;   }
     const Proxy* proxy(const Def* type, Defs ops, tag_t index, flags_t flags, const Def* dbg = {}) { return unify<Proxy>(ops.size(), type, ops, index, flags, dbg); }
-    //@}
-
-    /// @name var
-    //@{
-    /// @em Nominal @p Var for @em structural binders.
-    Var* nom_var(const Def* type, const Def* dbg = {}) { return insert<Var>(1, type, dbg); }
-    /// @em Structural @p Var for @em nominal binders.
     const Var* var(const Def* type, Def* nom, const Def* dbg = {}) { return unify<Var>(1, type, nom, dbg); }
     //@}
 

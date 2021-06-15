@@ -97,10 +97,10 @@ template void Streamable<Scope>::write() const;
 bool is_free(const Var* var, const Def* def) {
     // optimize common cases
     if (def == var) return true;
-    for (auto p : var->binder()->vars())
+    for (auto p : var->nom()->vars())
         if (p == var) return true;
 
-    Scope scope(var->binder());
+    Scope scope(var->nom());
     return scope.live(def);
 }
 
