@@ -181,13 +181,13 @@ public:
     /// @name Extract
     //@{
     /// During a rebuild we cannot infer the type if it is not set yet; in this case we rely on @p ex_type.
-    const Def* extract_(const Def* ex_type, const Def* tup, const Def* i, const Def* dbg = {});
-    const Def* extract(const Def* tup, const Def* i, const Def* dbg = {}) { return extract_(nullptr, tup,           i, dbg); }
-    const Def* extract(const Def* tup, u64 a, u64 i, const Def* dbg = {}) { return extract_(nullptr, tup, lit_i(a, i), dbg); }
-    const Def* extract(const Def* tup,        u64 i, const Def* dbg = {}) { return extract(tup, as_lit(tup->arity()), i, dbg); }
-    const Def* extract_unsafe(const Def* tup, u64 i, const Def* dbg = {}) { return extract_unsafe(tup, lit_i(0_u64, i), dbg); }
-    const Def* extract_unsafe(const Def* tup, const Def* i, const Def* dbg = {}) {
-        return extract(tup, op(Conv::u2u, type_i(as_lit(tup->type()->reduce()->arity())), i, dbg), dbg);
+    const Def* extract_(const Def* ex_type, const Def* agg, const Def* i, const Def* dbg = {});
+    const Def* extract(const Def* agg, const Def* i, const Def* dbg = {}) { return extract_(nullptr, agg,           i, dbg); }
+    const Def* extract(const Def* agg, u64 a, u64 i, const Def* dbg = {}) { return extract_(nullptr, agg, lit_i(a, i), dbg); }
+    const Def* extract(const Def* agg,        u64 i, const Def* dbg = {}) { return extract(agg, as_lit(agg->arity()), i, dbg); }
+    const Def* extract_unsafe(const Def* agg, u64 i, const Def* dbg = {}) { return extract_unsafe(agg, lit_i(0_u64, i), dbg); }
+    const Def* extract_unsafe(const Def* agg, const Def* i, const Def* dbg = {}) {
+        return extract(agg, op(Conv::u2u, type_i(as_lit(agg->type()->reduce()->arity())), i, dbg), dbg);
     }
     /// Builds <tt>(f, t)#cond</tt>.
     const Def* select(const Def* t, const Def* f, const Def* cond, const Def* dbg = {}) { return extract(tuple({f, t}), cond, dbg); }
@@ -195,12 +195,12 @@ public:
 
     /// @name Insert
     //@{
-    const Def* insert(const Def* tup, const Def* i, const Def* val, const Def* dbg = {});
-    const Def* insert(const Def* tup, u64 a, u64 i, const Def* val, const Def* dbg = {}) { return insert(tup,          lit_i(  a, i), val, dbg); }
-    const Def* insert(const Def* tup,        u64 i, const Def* val, const Def* dbg = {}) { return insert(tup, as_lit(tup->arity()), i , val, dbg); }
-    const Def* insert_unsafe(const Def* tup, u64 i, const Def* val, const Def* dbg = {}) { return insert_unsafe(tup,   lit_i(0_u64, i), val, dbg); }
-    const Def* insert_unsafe(const Def* tup, const Def* i, const Def* val, const Def* dbg = {}) {
-        return insert(tup, op(Conv::u2u, type_i(as_lit(tup->type()->reduce()->arity())), i), val, dbg);
+    const Def* insert(const Def* agg, const Def* i, const Def* val, const Def* dbg = {});
+    const Def* insert(const Def* agg, u64 a, u64 i, const Def* val, const Def* dbg = {}) { return insert(agg,          lit_i(  a, i), val, dbg); }
+    const Def* insert(const Def* agg,        u64 i, const Def* val, const Def* dbg = {}) { return insert(agg, as_lit(agg->arity()), i , val, dbg); }
+    const Def* insert_unsafe(const Def* agg, u64 i, const Def* val, const Def* dbg = {}) { return insert_unsafe(agg,   lit_i(0_u64, i), val, dbg); }
+    const Def* insert_unsafe(const Def* agg, const Def* i, const Def* val, const Def* dbg = {}) {
+        return insert(agg, op(Conv::u2u, type_i(as_lit(agg->type()->reduce()->arity())), i), val, dbg);
     }
     //@}
 
@@ -345,7 +345,7 @@ public:
     const Def* op(Acc   o, const Def* a, const Def* b, const Def* body, const Def* dbg = {}) { return app(ax(o), {a, b, body}, dbg); }
     const Def* op_atomic(const Def* fn, Defs args, const Def* dbg = {}) { return app(fn_atomic(fn), args, dbg); }
     const Def* op_bitcast(const Def* dst_type, const Def* src, const Def* dbg = {}) { return app(fn_bitcast(dst_type, src->type()), src, dbg); }
-    const Def* op_lea(const Def* ptr, const Def* index, const Def* dbg = {});
+    const Def* op_lea(const Def* ptr, const Def* idx, const Def* dbg = {});
     const Def* op_lea_unsafe(const Def* ptr, u64 i, const Def* dbg = {}) { return op_lea_unsafe(ptr, lit_i(i), dbg); }
     const Def* op_lea_unsafe(const Def* ptr, const Def* i, const Def* dbg = {}) { auto safe_i = type_i(as<Tag::Ptr>(ptr->type())->arg(0)->arity()); return op_lea(ptr, op(Conv::u2u, safe_i, i), dbg); }
     const Def* op_load (const Def* mem, const Def* ptr,                 const Def* dbg = {}) { auto [T, a] = as<Tag::Ptr>(ptr->type())->args<2>(); return app(app(ax_load (), {T, a}), {mem, ptr     }, dbg); }

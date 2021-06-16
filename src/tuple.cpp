@@ -28,7 +28,7 @@ const Def* proj(const Def* def, u64 a, u64 i, const Def* dbg) {
 }
 
 static bool should_flatten(const Def* def) {
-    return is_sigma_or_arr(def->sort() == Sort::Term ? def->type() : def);
+    return isa_agg(def->sort() == Sort::Term ? def->type() : def);
 }
 
 static void flatten(std::vector<const Def*>& ops, const Def* def) {

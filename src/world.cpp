@@ -311,13 +311,13 @@ const Def* World::tuple(const Def* type, Defs ops, const Def* dbg) {
     // eta rule for tuples:
     // (extract(tup, 0), extract(tup, 1), extract(tup, 2)) -> tup
     if (n != 0) if (auto extract = isa<Extract>(ops[0])) {
-        auto tup = extract->tuple();
+        auto tup = extract->agg();
         bool eta = tup->type() == type;
         for (size_t i = 0; i != n && eta; ++i) {
             if (auto extract = isa<Extract>(ops[i])) {
-                if (auto index = isa_lit(extract->index())) {
-                    if (eta &= u64(i) == *index) {
-                        eta &= extract->tuple() == tup;
+                if (auto idx = isa_lit(extract->idx())) {
+                    if (eta &= u64(i) == *idx) {
+                        eta &= extract->agg() == tup;
                         continue;
                     }
                 }
@@ -338,78 +338,78 @@ const Def* World::tuple_str(const char* s, const Def* dbg) {
     return tuple(ops, dbg);
 }
 
-const Def* World::extract_(const Def* ex_type, const Def* tup, const Def* index, const Def* dbg) {
-    if (isa<Arr>(index) || isa<Pack>(index)) {
-        Array<const Def*> ops(as_lit(index->arity()), [&](size_t) { return extract(tup, index->ops().back()); });
-        return isa<Arr>(index) ? sigma(ops, dbg) : tuple(ops, dbg);
-    } else if (isa<Sigma>(index) || isa<Tuple>(index)) {
-        auto n = index->num_ops();
-        Array<const Def*> idx(n, [&](size_t i) { return index->op(i); });
-        Array<const Def*> ops(n, [&](size_t i) { return proj(tup, n, as_lit(idx[i])); });
-        return isa<Sigma>(index) ? sigma(ops, dbg) : tuple(ops, dbg);
+const Def* World::extract_(const Def* ex_type, const Def* agg, const Def* idx, const Def* dbg) {
+    if (isa<Arr>(idx) || isa<Pack>(idx)) {
+        Array<const Def*> ops(as_lit(idx->arity()), [&](size_t) { return extract(agg, idx->ops().back()); });
+        return isa<Arr>(idx) ? sigma(ops, dbg) : tuple(ops, dbg);
+    } else if (isa<Sigma>(idx) || isa<Tuple>(idx)) { // TODO use utility functions instead
+        auto n = idx->num_ops();
+        Array<const Def*> i_s(n, [&](size_t i) { return idx->op(i); });
+        Array<const Def*> ops(n, [&](size_t i) { return proj(agg, n, as_lit(i_s[i])); });
+        return isa<Sigma>(idx) ? sigma(ops, dbg) : tuple(ops, dbg);
     }
 
-    auto type = tup->type()->reduce();
+    auto type = agg->type()->reduce();
     if (err()) {
-        if (!checker_->equiv(type->arity(), isa_sized_type(index->type())))
-            err()->index_out_of_range(type->arity(), index);
+        if (!checker_->equiv(type->arity(), isa_sized_type(idx->type())))
+            err()->index_out_of_range(type->arity(), idx);
     }
 
     // nom sigmas can be 1-tuples
-    if (auto mod = isa_lit(isa_sized_type(index->type())); mod && *mod == 1 && !tup->type()->isa_nom<Sigma>()) return tup;
-    if (auto pack = tup->isa_structural<Pack>()) return pack->body();
+    if (auto mod = isa_lit(isa_sized_type(idx->type())); mod && *mod == 1 && !agg->type()->isa_nom<Sigma>()) return agg;
+    if (auto pack = agg->isa_structural<Pack>()) return pack->body();
 
-    // extract(insert(x, index, val), index) -> val
-    if (auto insert = isa<Insert>(tup)) {
-        if (index == insert->index())
-            return insert->value();
+    // extract(insert(x, idx, val), idx) -> val
+    if (auto insert = isa<Insert>(agg)) {
+        if (idx == insert->idx())
+            return insert->val();
     }
 
-    if (auto i = isa_lit(index)) {
-        if (auto tuple = isa<Tuple>(tup)) return tuple->op(*i);
+    if (auto i = isa_lit(idx)) {
+        if (auto tuple = isa<Tuple>(agg)) return tuple->op(*i);
 
         // extract(insert(x, j, val), i) -> extract(x, i) where i != j (guaranteed by rule above)
-        if (auto insert = isa<Insert>(tup)) {
-            if (isa<Lit>(insert->index()))
-                return extract(insert->tuple(), index, dbg);
+        if (auto insert = isa<Insert>(agg)) {
+            if (isa<Lit>(insert->idx()))
+                return extract(insert->agg(), idx, dbg);
         }
 
         if (isa<Sigma>(type))
-            return unify<Extract>(2, ex_type ? ex_type : type->op(*i), tup, index, dbg);
+            return unify<Extract>(2, ex_type ? ex_type : type->op(*i), agg, idx, dbg);
     }
 
     type = as<Arr>(type)->body();
-    return unify<Extract>(2, type, tup, index, dbg);
+    return unify<Extract>(2, type, agg, idx, dbg);
 }
 
-const Def* World::insert(const Def* tup, const Def* index, const Def* val, const Def* dbg) {
-    auto type = tup->type()->reduce();
+const Def* World::insert(const Def* agg, const Def* idx, const Def* val, const Def* dbg) {
+    auto type = agg->type()->reduce();
 
-    if (err() && !checker_->equiv(type->arity(), isa_sized_type(index->type())))
-        err()->index_out_of_range(type->arity(), index);
+    if (err() && !checker_->equiv(type->arity(), isa_sized_type(idx->type())))
+        err()->index_out_of_range(type->arity(), idx);
 
-    if (auto mod = isa_lit(isa_sized_type(index->type())); mod && *mod == 1)
-        return tuple(tup, {val}, dbg); // tup could be nom - that's why the tuple ctor is needed
+    if (auto mod = isa_lit(isa_sized_type(idx->type())); mod && *mod == 1)
+        return tuple(agg, {val}, dbg); // agg could be nom - that's why the tuple ctor is needed
 
     // insert((a, b, c, d), 2, x) -> (a, b, x, d)
-    if (auto t = isa<Tuple>(tup)) return t->refine(as_lit(index), val);
+    if (auto t = isa<Tuple>(agg)) return t->refine(as_lit(idx), val);
 
     // insert(‹4; x›, 2, y) -> (x, x, y, x)
-    if (auto pack = isa<Pack>(tup)) {
+    if (auto pack = isa<Pack>(agg)) {
         if (auto a = isa_lit(pack->arity())) {
             Array<const Def*> new_ops(*a, pack->body());
-            new_ops[as_lit(index)] = val;
+            new_ops[as_lit(idx)] = val;
             return tuple(type, new_ops, dbg);
         }
     }
 
-    // insert(insert(x, index, y), index, val) -> insert(x, index, val)
-    if (auto insert = isa<Insert>(tup)) {
-        if (insert->index() == index)
-            tup = insert->tuple();
+    // insert(insert(x, idx, y), idx, val) -> insert(x, idx, val)
+    if (auto insert = isa<Insert>(agg)) {
+        if (insert->idx() == idx)
+            agg = insert->agg();
     }
 
-    return unify<Insert>(3, tup, index, val, dbg);
+    return unify<Insert>(3, agg, idx, val, dbg);
 }
 
 bool is_shape(const Def* s) {
@@ -589,10 +589,10 @@ static const Def* tuple_of_types(const Def* t) {
     return t;
 }
 
-const Def* World::op_lea(const Def* ptr, const Def* index, const Def* dbg) {
+const Def* World::op_lea(const Def* ptr, const Def* idx, const Def* dbg) {
     auto [pointee, addr_space] = as<Tag::Ptr>(ptr->type())->args<2>();
     auto Ts = tuple_of_types(pointee);
-    return app(app(ax_lea(), {pointee->arity(), Ts, addr_space}), {ptr, index}, dbg);
+    return app(app(ax_lea(), {pointee->arity(), Ts, addr_space}), {ptr, idx}, dbg);
 }
 
 /*

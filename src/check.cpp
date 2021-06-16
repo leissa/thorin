@@ -19,7 +19,7 @@ bool Checker::equiv(const Def* d1, const Def* d2) {
 
     if (isa<Top>(d1) || isa<Top>(d2)) return equiv(d1->type(), d2->type());
 
-    if (is_sigma_or_arr(d1)) {
+    if (isa_agg(d1)) {
         if (!equiv(d1->arity(), d2->arity())) return false;
 
         if (auto a = isa_lit(d1->arity())) {

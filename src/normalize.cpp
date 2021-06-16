@@ -1003,7 +1003,7 @@ const Def* normalize_lift(const Def* type, const Def* c, const Def* arg, const D
     if (auto l_in = isa_lit(n_i)) {
         auto args = arg->split(*l_in);
 
-        if (lr && std::all_of(args.begin(), args.end(), [&](const Def* arg) { return is_tuple_or_pack(arg); })) {
+        if (lr && std::all_of(args.begin(), args.end(), [&](const Def* arg) { return isa_agg(arg); })) {
             auto shapes = s->split(*lr);
             auto s_n = isa_lit(shapes.front());
 
