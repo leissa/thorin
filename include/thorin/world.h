@@ -74,7 +74,7 @@ public:
     }
     ~World();
 
-    /// @ getters
+    /// @name getters
     //@{
     const std::string& name() const { return data_.name_; }
     const Sea& defs() const { return data_.defs_; }
@@ -87,12 +87,13 @@ public:
     u32 next_gid() { return ++state_.cur_gid; }
     //@}
 
-    /// @name Type, Kind, Proxy, Var
+    /// @name Type, Kind, Proxy, Var, Unk
     //@{
     const Type* type() const { return data_.type_; }
     const Kind* kind() const { return data_.kind_;   }
     const Proxy* proxy(const Def* type, Defs ops, tag_t index, flags_t flags, const Def* dbg = {}) { return unify<Proxy>(ops.size(), type, ops, index, flags, dbg); }
     const Var* var(const Def* type, Def* nom, const Def* dbg = {}) { return unify<Var>(1, type, nom, dbg); }
+    Unk* nom_unk(const Def* type, const Def* dbg = {}) { return insert<Unk>(0, type, dbg); }
     //@}
 
     /// @name Axiom
@@ -261,16 +262,6 @@ public:
     const Def* vel(const Def* type, const Def* value, const Def* dbg = {});
     const Def* pick(const Def* type, const Def* value, const Def* dbg = {});
     const Def* test(const Def* value, const Def* probe, const Def* match, const Def* clash, const Def* dbg = {});
-    //@}
-
-    //@}
-
-    /// @name globals -- depdrecated; will be removed
-    //@{
-    //@}
-    const Def* global(const Def* id, const Def* init, bool is_mutable = true, const Def* dbg = {});
-    const Def* global(const Def* init, bool is_mutable = true, const Def* dbg = {}) { return global(lit_nat(state_.cur_gid), init, is_mutable, dbg); }
-    const Def* global_immutable_string(const std::string& str, const Def* dbg = {});
     //@}
 
     /// @name types

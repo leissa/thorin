@@ -23,7 +23,7 @@ using nat_t    = u64;
     m(Lit, lit)                                                               \
     m(Nat, Nat)                                                               \
     m(Var, var)                                                               \
-    m(Global, global)
+    m(Unk, unk)
 
 #define THORIN_TAG(m)                                               \
     m(Mem, mem) m(I, i) m(F, f) m(Ptr, ptr)                         \

@@ -497,39 +497,19 @@ public:
     friend class World;
 };
 
-/**
- * A global variable in the data segment.
- * A @p Global may be mutable or immutable.
- * @em deprecated. WILL BE REMOVED
- */
-class Global : public Def {
+class Unk : public Def {
 private:
-    Global(const Def* type, const Def* id, const Def* init, bool is_mutable, const Def* dbg)
-        : Def(Node, type, {id, init}, is_mutable, dbg)
+    Unk(const Def* type, const Def* dbg)
+        : Def(Node, type, 0, 0, dbg)
     {}
 
-public:
-    /// @name ops
-    //@{
-    /// This thing's sole purpose is to differentiate on global from another.
-    const Def* id() const { return op(0); }
-    const Def* init() const { return op(1); }
-    //@}
-    /// @name type
-    //@{
-    const App* type() const;
-    const Def* alloced_type() const;
-    //@}
-    /// @name misc getters
-    //@{
-    bool is_mutable() const { return fields(); }
-    //@}
     /// @name virtual methods
     //@{
-    const Def* rebuild(World& to, const Def* type, Defs ops, const Def*) const override;
+    Unk* stub(World&, const Def*, const Def*) override;
     //@}
 
-    static constexpr auto Node = Node::Global;
+public:
+    static constexpr auto Node = Node::Proxy;
     friend class World;
 };
 

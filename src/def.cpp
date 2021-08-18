@@ -74,7 +74,6 @@ const Def* Arr    ::rebuild(World& w, const Def*  , Defs o, const Def* dbg) cons
 const Def* Axiom  ::rebuild(World& w, const Def* t, Defs  , const Def* dbg) const { return w.axiom(normalizer(), t, tag(), flags(), dbg); }
 const Def* Et     ::rebuild(World& w, const Def* t, Defs o, const Def* dbg) const { return w.et(t, o, dbg); }
 const Def* Extract::rebuild(World& w, const Def* t, Defs o, const Def* dbg) const { return w.extract_(t, o[0], o[1], dbg); }
-const Def* Global ::rebuild(World& w, const Def*  , Defs o, const Def* dbg) const { return w.global(o[0], o[1], is_mutable(), dbg); }
 const Def* Insert ::rebuild(World& w, const Def*  , Defs o, const Def* dbg) const { return w.insert(o[0], o[1], o[2], dbg); }
 const Def* Type   ::rebuild(World& w, const Def*  , Defs  , const Def*    ) const { return w.type(); }
 const Def* Lam    ::rebuild(World& w, const Def* t, Defs o, const Def* dbg) const { return w.lam(as<Pi>(t), o[0], o[1], dbg); }
@@ -93,6 +92,7 @@ const Def* Vel    ::rebuild(World& w, const Def* t, Defs o, const Def* dbg) cons
 
 template<bool up> const Def* TExt  <up>::rebuild(World& w, const Def* t, Defs  , const Def* dbg) const { return w.ext  <up>(t,    dbg); }
 template<bool up> const Def* TBound<up>::rebuild(World& w, const Def*  , Defs o, const Def* dbg) const { return w.bound<up>(   o, dbg); }
+
 /*
  * stub
  */
@@ -101,6 +101,7 @@ Lam*   Lam  ::stub(World& w, const Def* t, const Def* dbg) { return w.nom_lam  (
 Pi*    Pi   ::stub(World& w, const Def* t, const Def* dbg) { return w.nom_pi   (t, dbg); }
 Sigma* Sigma::stub(World& w, const Def* t, const Def* dbg) { return w.nom_sigma(t, num_ops(), dbg); }
 Arr*   Arr  ::stub(World& w, const Def* t, const Def* dbg) { return w.nom_arr  (t, shape(), dbg); }
+Unk*   Unk  ::stub(World& w, const Def* t, const Def* dbg) { return w.nom_unk  (t, dbg); }
 
 template<bool up> TBound<up>* TBound<up>::stub(World& w, const Def* t, const Def* dbg) { return w.nom_bound<up>(t, num_ops(), dbg); }
 
@@ -172,7 +173,6 @@ Sort Def::sort() const {
         case Node::Sigma:
         case Node::Join:
         case Node::Meet: return Sort::Type;
-        case Node::Global:
         case Node::Insert:
         case Node::Lam:
         case Node::Pack:
@@ -322,13 +322,6 @@ const Def* Def::refine(size_t i, const Def* new_op) const {
     new_ops[i] = new_op;
     return rebuild(world(), type(), new_ops, dbg());
 }
-
-/*
- * Global
- */
-
-const App* Global::type() const { return thorin::as<Tag::Ptr>(Def::type()); }
-const Def* Global::alloced_type() const { return type()->arg(0); }
 
 /*
  * instantiate templates
